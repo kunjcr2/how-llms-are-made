@@ -19,3 +19,5 @@ We basically get the data from the file and convert those into encodings of toke
 
 ## Attention Mechanism
 We need some sort of attention mechanism as only having the meaning of the word and the position wouldnt work and that creates issues with long sequence dependencies. RNNs worked but not for long term. We use attention as attention is basically how important a word is compared to the other words in the sequence or how much attention should be given to other words in the sequence.
+1. We use simplified Attention mechanism at the BASE level. Basically we get the attention scores (w) using dot products of each token with every other token and then apply softmax to it and multiply w with corresponding input embedding to get context embeddings.
+2. 
