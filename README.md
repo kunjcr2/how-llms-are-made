@@ -2,6 +2,7 @@
 > A simple pipeline of how LLMs are made from scratch
 
 ## Data Preprocessing pipeline
+We basically get the data from the file and convert those into encodings of tokens using **tiktoken** and then we convert those into the datasets and convert dataset to dataloader and then using embedding layer to get the embeddings of tokens as that is what we call feature extraction.
 1. Get the data, and store it in a variable
 2. Use tiktoken and get the vocab of gpt2 which is about 50257 in length.
    - We use .get_encoding("gpt2")
@@ -15,3 +16,6 @@
 7. And we pass in the input_ids from dataset class to embedding layer, and that will create the token_embeddings.
 8. Now we create another embedding layer with (context_vector_length, output_dimension_of_vector) for positional_embeddings.
 9. Now we basically add token_embeddings and positional_embeddings to create input_embeddings which are input to the model.
+
+## Attention Mechanism
+We need some sort of attention mechanism as only having the meaning of the word and the position wouldnt work and that creates issues with long sequence dependencies. RNNs worked but not for long term. We use attention as attention is basically how important a word is compared to the other words in the sequence or how much attention should be given to other words in the sequence.
