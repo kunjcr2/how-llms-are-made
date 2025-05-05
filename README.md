@@ -8,7 +8,7 @@ We basically get the data from the file and convert those into encodings of toke
 
 1. Get the data, and store it in a variable
 2. Use tiktoken and get the vocab of gpt2 which is about 50257 in length.
-   - We use .get_encoding("gpt2")
+   - We use `tiktoken.get_encoding("gpt2")`
 3. Now create a dataset class and have input_ids and output_ids and using max_length and stride varibales, we make input_ids and target_ids of certain length, usually it is called the context_length. And dont forget to keep those in tensors.
 4. create a dataloader function to convert the dataset into dataloaders of certain batch_size.
 5. Now we basically create embedding layer to get the token embeddings using (vocabulary_dimension, output_dimension_of_vector) as arguments.
