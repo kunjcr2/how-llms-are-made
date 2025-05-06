@@ -1,4 +1,4 @@
-# **How LLMs are made ?**
+# **How LLMs are made (from scratch)?**
 
 > A simple pipeline of how LLMs are made from scratch
 
