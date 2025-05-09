@@ -33,3 +33,5 @@ We need some sort of attention mechanism as only having the meaning of the word 
 ## LLM Architecture
 
 1. We talk about the actual workflow of how the data passes in LLM. We go from input layer to transformer block which contains Normalization layer, Multi head attention mechanims and then feed forward neural netowrks and much more. After which we move to the output layers and get logits. We will be training GPT2-124M model from scratch.
+2. We talked about how the Layer normalization work and what is it, and why is it used to prevent exploding and vanishing gradient. We basically try to make the mean = 0 and variance = 1, by substituting `x` to
+   `scale*((x_i-mean)/sqrt(variance+eps))+shift`. Scale and shift are basically for having smoother training. Also, gradient basically how should the weight be changed to minimize the loss.
