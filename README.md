@@ -39,3 +39,7 @@ We need some sort of attention mechanism as only having the meaning of the word 
    `0.5*x*(1+torch.tanh(torch.sqrt(torch.tensor(2/torch.pi))* (x + 0.044715*x**3)))`, and it works actually between 2 linear layers with neurons benig four times the embedding dim. They are stackable.
 4. Gradient vanishing is a bigg issue, and just to solve it, we use shortcut connection where we basically add output with input of the layer and that preserves the gradient from vanishing !
 5. We in the lecture-23, got everything together in a transformer block!
+
+# Complete GPT architecture
+
+- Look it in the `./architecture/LLM-GPT-arch.ipynb` for the entire code here. We have created entire GPT2 architectue.
