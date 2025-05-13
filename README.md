@@ -45,3 +45,5 @@ We need some sort of attention mechanism as only having the meaning of the word 
 - Look it in the `./architecture/LLM-GPT-arch.ipynb` for the entire code here. We have created entire GPT2 architectue.
 
 Update: I added the standard GPT model by having EVERYTHING inside a class and we do `model = GPTModel(GPT_124M_CONFIG)` to initialize.
+
+# Training GPT architecture
