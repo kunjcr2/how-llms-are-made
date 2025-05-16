@@ -54,3 +54,5 @@ Update: I added the standard GPT model by having EVERYTHING inside a class and w
 # 3. WE TRAINED IT.
 
 - Go and check `LLM-training.ipynb`. All the important stuff is in the .ipynb only. We used the optimizer AdamW to clear gradient with `optimizer.zero_grad()`, calculate loss gradient with `loss.backward()`, and then back propogate with simple `optimizer.step()` function. For more info, check the notes on flow of data.
+
+4. We use temprature scaling to get the creativity out of the model. More temprature leads to lower logits and hence softmax gives spreaded probs across a lots of tokens leading to MUCH more creativity while lower temprature will higher the logits leading to sharper probabilities of obvious tokens, leading to similar behaviour of `torch.multinomial(probas, num_sample=100)`, closer to `torch.argmax(probas)`.
