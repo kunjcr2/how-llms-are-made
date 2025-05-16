@@ -50,3 +50,7 @@ Update: I added the standard GPT model by having EVERYTHING inside a class and w
 
 1. We learnt about the cross-entropy loss function. How that works. Also we used `torch.nn.functional.cross_entropy(logits_flats, target_flats)`, which calculates cross entropy by using logit's row's probablity with the index of target's column, putting all that in a tensor and taking log, getting mean, negating it. We also did term perplexity.
 2. We split data of the_verdict.txt into training and validation data, which are now converted to data_loaders, after which ew calculate the loss for both of those using two functions that can be seen in `LLM-training.ipynb`.
+
+# 3. WE TRAINED IT.
+
+- Go and check `LLM-training.ipynb`. All the important stuff is in the .ipynb only. We used the optimizer AdamW to clear gradient with `optimizer.zero_grad()`, calculate loss gradient with `loss.backward()`, and then back propogate with simple `optimizer.step()` function. For more info, check the notes on flow of data.
