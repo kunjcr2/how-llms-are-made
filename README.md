@@ -57,3 +57,4 @@ Update: I added the standard GPT model by having EVERYTHING inside a class and w
 
 4. We use temprature scaling to get the creativity out of the model. More temprature leads to lower logits and hence softmax gives spreaded probs across a lots of tokens leading to MUCH more creativity while lower temprature will higher the logits leading to sharper probabilities of obvious tokens, leading to similar behaviour of `torch.multinomial(probas, num_sample=100)`, closer to `torch.argmax(probas)`.
 5. We now have a `generate()` function in training that basically uses top_k sampling as well as temprature scaling to predict next token much better way. in `torch.topk()` we choose top k elements that are highest in a logit vector and then we apply point 4 on it and whatever comes, we use it to get the next token.
+6. we basically saw how to load and save models. go to the image file in '5_post_training'.
