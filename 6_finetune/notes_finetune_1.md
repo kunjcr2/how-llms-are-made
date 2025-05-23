@@ -34,19 +34,29 @@ Go to `https://youtu.be/yXrGeDNuymY?list=PLPTV0NXA_ZSgsLAr8YCgCwhPIJNNtexWu`.
 - Adapting a pretrained model to a specific task by training the model on additional data is what we call as fintuning.
 
 Two types of the finetuning:
- 1. Instruction finetuning, here we give the LLM an instruction and which can be then applied to the main body to perform tasks like current GPT does.
- 2. Classification finetuning, and here we basically just restict the model to answer in few classifications. Like email spam or not spam. AND, i dont care about you. Coming back to instructions.
+
+1.  Instruction finetuning, here we give the LLM an instruction and which can be then applied to the main body to perform tasks like current GPT does.
+2.  Classification finetuning, and here we basically just restict the model to answer in few classifications. Like email spam or not spam. AND, i dont care about you. Coming back to instructions.
 
 There are 2 ways or methods for finetuning. Lora and QLore. Read about them from `https://www.redhat.com/en/topics/ai/lora-vs-qlora#:~:text=QLoRA%20and%20LoRA%20are%20both%20fine-tuning%20techniques%20that,trains%20the%20parameters%20necessary%20to%20learn%20new%20information.` Dont go much in this. For now, just remember that these are just better ways of finetuning the models.
 
 ---
+
 ---
+
 ---
+
 **I am skipping a big chunkn of lectures as they are classification fine tuning. I have seen those videos but not coded out. Here are the links to it:**
 
 Starts from here, till lecture 37.
 `https://www.youtube.com/watch?v=yZpy_hsC1bE&list=PLPTV0NXA_ZSgsLAr8YCgCwhPIJNNtexWu&index=33&pp=iAQB0gcJCY0JAYcqIYzv`
 
+The only thing in the video is classification LLMs have a small change and that is, we had to move from logits being of the size 50257, we just needed it to be size of 2 (or size of outcomes in classification.)
+
 ---
+
 ---
+
 ---
+
+Now from the next one, we actually get the stuff. We call it **Instruction finetuning**.
