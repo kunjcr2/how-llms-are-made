@@ -60,3 +60,5 @@ Update: I added the standard GPT model by having EVERYTHING inside a class and w
 6. we basically saw how to load and save models. go to the image file in `5_post_training`.
 
 ----------Finals week done----------
+
+> # **Notes in detailed manner are in the `6_finetune` folder.**
