@@ -19,6 +19,8 @@ And we convert those to -
 
 - We use `AlphaCa prompt` stype by stanford as it MUCH more common. Search up to google to check what that is and how it looks. Another one is `Phi3 prompt`.
 
+> # **CHECK `LLM_full_finetune.ipynb`** for ACTUAL Finetuning thing.
+
 ---
 
 ## Lec2 - LoRA - Shaw Talebi
