@@ -41,3 +41,11 @@ And we convert those to -
 > # **CHECK `LLM_LoRA_finetune.ipynb`** for LoRA Finetuning thing.
 
 ---
+
+## Quantization:
+
+- Usually models parameters are saved with float32 datatypes which is basically 4 bytes per parameter and we call it `precision`. But as memomry started increasing, we started reducing float32 to 50% precision at float16. 
+- Here we loose a little bot of precision or accuracy by keeping model weight as `7.556` instead of `7.55578`. We save it as 2 byres reducing memory requirements to half.
+- This is EXACTLY what we call as `Quantization`. We can save it as float16, float8, int4 and int2; each showing number of bits.
+
+For nore info., `WAIT`.
