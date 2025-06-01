@@ -38,4 +38,6 @@ And we convert those to -
   - bias: This basically controls the bias of the training. And we keep none for now, cuz we dont know what that is.
   - task_type: It tells PEFT, what you're doing. There are options like `Tasktype.CAUSAL_LM`, `Tasktype.SEQ_CLS`, `Tasktype.TOKEN_CLS` and `Tasktype.SEQ_2_SEQ_LM` and as we're using GPT-2, we go with `CAUSAL_LM`.
 
-> # **CHECK `LLM_LoRA_finetune.ipynb`** for ACTUAL LoRA Finetuning thing.
+> # **CHECK `LLM_LoRA_finetune.ipynb`** for LoRA Finetuning thing.
+
+---
