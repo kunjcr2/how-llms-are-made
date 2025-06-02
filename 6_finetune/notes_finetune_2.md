@@ -48,4 +48,4 @@ And we convert those to -
 - Here we loose a little bot of precision or accuracy by keeping model weight as `7.556` instead of `7.55578`. We save it as 2 byres reducing memory requirements to half.
 - This is EXACTLY what we call as `Quantization`. We can save it as float16, float8, int4 and int2; each showing number of bits.
 
-For nore info., `WAIT`.
+For more info., `WAIT`.
