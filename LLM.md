@@ -62,3 +62,5 @@ Update: I added the standard GPT model by having EVERYTHING inside a class and w
 ----------Finals week done----------
 
 > # **Notes in detailed manner are in the `6_finetune` folder.**
+
+> # **Code for trained models are in the `7_LLM_source_code` folder.**
