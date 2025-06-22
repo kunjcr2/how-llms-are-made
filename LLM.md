@@ -65,4 +65,6 @@ Update: I added the standard GPT model by having EVERYTHING inside a class and w
 
 > # **Code for trained models are in the `7_LLM_source_code` folder.**
 
+> # **Code for classic Machine learning concepts are in the `8_MLandDL` folder.**
+
 - Visited on 6/21/2025
