@@ -81,9 +81,9 @@ W = W - lr * ∂L/∂W = 0.5 - 0.1 * 1.0 = 0.4
                                       ↓
                                 [Loss Function]
                                       ↓
-                         [Backpropagate: Compute Gradients]
+                                [Backpropagate: Compute Gradients]
                                       ↓
-                             [Update Weights]
+                                [Update Weights]
 ```
 
 ## Key Takeaways
