@@ -59,7 +59,7 @@ Update: I added the standard GPT model by having EVERYTHING inside a class and w
 5. We now have a `generate()` function in training that basically uses top_k sampling as well as temprature scaling to predict next token much better way. in `torch.topk()` we choose top k elements that are highest in a logit vector and then we apply point 4 on it and whatever comes, we use it to get the next token.
 6. we basically saw how to load and save models. go to the image file in `5_post_training`.
 
-----------Finals week done----------
+## ----------Finals week done----------
 
 > # **Notes in detailed manner are in the `6_finetune` folder.**
 
