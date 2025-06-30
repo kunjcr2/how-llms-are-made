@@ -1,6 +1,6 @@
 # **How LLMs are made (from scratch)?**
 
-> A simple pipeline of how LLMs are made from scratch
+> A simple pipeline of how GPTs are made from scratch
 
 ## Data Preprocessing pipeline
 
