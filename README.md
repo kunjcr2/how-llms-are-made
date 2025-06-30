@@ -1,5 +1,5 @@
-### For GPT notes, go to `GPT.md`
+### For GPT notes, go to `./GPT/GPT.md`
 
-### For DeepSeek notes, go to `DeepSeek.md`
+### For DeepSeek notes, go to `./DeepSeek/DeepSeek.md`
 
-### For prompts notes, go to `Prompt.md`
+### For prompts notes, go to `./MLandDL/Prompt.md`
