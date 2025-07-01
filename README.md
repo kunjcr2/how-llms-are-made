@@ -2,4 +2,4 @@
 
 ### For DeepSeek notes, go to `./DeepSeek/DeepSeek.md`
 
-### For prompts notes, go to `./MLandDL/Prompt.md`
+### For classic ML and DL stuff, go to `./MLandDL`
