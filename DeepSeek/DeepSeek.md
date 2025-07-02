@@ -9,7 +9,17 @@
 
 ---
 
-## Starting now with DeepSeek 
+## Starting now with DeepSeek
 
-3. Lec 3, 4, 5, 6, 7 and 8 are just Multi Head Attention Mechanism.
-4. `Key-Value cache` or `KV Caching` (Popular term).
+3.  Lec 3, 4, 5, 6, 7 and 8 are just Multi Head Attention Mechanism.
+4.  `Key-Value cache` or `KV Caching` (Popular term). Lets say we have a next token generation task.
+    a. AB -> Inference -> C
+    b. ABC -> Inference -> D
+    c. ABCD -> Inference -> E
+    - So here what happens is that, we have to calculate K, Q, V, attn scores and attn weights, in transformer block for AB, thrice; ABC, twice. Which is basically waste of computation.
+    - Also, as we know, to predict last token, we need the context vector of the last token ONLY. Lets assume that last token embeddings to be X.
+      ```
+      a. X*Wq=Q, X*Wk=K, X*Wv=V
+      ```
+      but now the the thing is We are getting K of last token. What about others. Thats where we get the remaining K and V matrices from cache which we already have.
+      So we take that cached K and V and use it to get the attn scores, attn weights and ahead with not having any sort of redundant calculations.
