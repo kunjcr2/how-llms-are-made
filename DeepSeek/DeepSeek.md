@@ -114,3 +114,4 @@ Size of cache = l*b*nl*s*2
 ```
 
 - Basically, deepseek becomes 6GBs rather than those big numbers. Now, the memory issue is solved. Coming to perfomance. All the `Wuk` and `Wuv` are there already, FIXED, but cached `Ckv` comes in everytime frmo cache and is being updated everytime leading to distinct heads and hence better performance.
+- For visual purposes, `./assets/MultiHeadLatentAttention.png` 
