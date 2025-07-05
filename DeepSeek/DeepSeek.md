@@ -96,7 +96,7 @@ context_vector
     = Q*K.T*V
     = (X*Wq)*(Ckv*Wuk)*(Ckv*Wuv)
     = (X*Wq)*(X*Wdkv*Wuk).T*(X*Wdkv*Wuv)
-    = X * Wq * Wuk.T * Wdkv.T * X.T * X * Wdkv * Wuv
+    = (X*Wq*Wuk.T) * (X*Wdkv).T * (X*Wdkv) * Wuv
 and that's exactly where we get 'Absorbed Query'.
 ```
 
