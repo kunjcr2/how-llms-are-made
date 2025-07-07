@@ -114,4 +114,6 @@ Size of cache = l*b*nl*s*2
 ```
 
 - Basically, deepseek becomes 6GBs rather than those big numbers. Now, the memory issue is solved. Coming to perfomance. All the `Wuk` and `Wuv` are there already, FIXED, but cached `Ckv` comes in everytime frmo cache and is being updated everytime leading to distinct heads and hence better performance.
-- For visual purposes, `./assets/MultiHeadLatentAttention.png` 
+- For visual purposes, `./assets/MultiHeadLatentAttention.png`
+
+8. We have started the `positional encoding`. Starting with simple `integer encoding`, but it had so many problems like variance not being in center and such so we dont talk about that. Then comes `binary encodings` where lower bits changes faster and upper ones, slower and they are just 1s and 0s and LLM's backpropogation get a tough challange of doing those jumps and hence we come across `Sinosuedal Encodings`, which is `binary encoding` but continuos.
