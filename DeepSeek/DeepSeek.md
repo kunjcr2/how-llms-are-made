@@ -117,3 +117,4 @@ Size of cache = l*b*nl*s*2
 - For visual purposes, `./assets/MultiHeadLatentAttention.png`
 
 8. We have started the `positional encoding`. Starting with simple `integer encoding`, but it had so many problems like variance not being in center and such so we dont talk about that. Then comes `binary encodings` where lower bits changes faster and upper ones, slower and they are just 1s and 0s and LLM's backpropogation get a tough challange of doing those jumps and hence we come across `Sinosuedal Encodings`, which is `binary encoding` but continuos.
+   - In the next lecture we talk about Sinosuedal encodings. It is mentioned in `Attention is all you need` and there are formulas in it. We basically get the encoding for `p+k` position from `p`th encoding of any index, by just rotating the vector in (for example) 2D space.
