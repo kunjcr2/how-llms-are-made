@@ -132,3 +132,38 @@ Size of cache = l*b*nl*s*2
 
 - Read more about it from the deepseek pdf.
 - We aplly something that we call as sparsity. Which is the method of breaking down the dense layer neural network into trainable experts.
+- usually we hve to take something we call it as `Sparsity deciscion` or `Load balancing` which means the deciscion of WHAT experts to choose and move ahead with (for ex. 2 out of 64) and the process of doing so; respectively.
+- We have another question of, lets say we choose 2 experts, expert A and expert B, then how much attention to be given to what expert is called `Routing`. There is a `Routing matrix (embed_dim, num_experts)`, and we do
+
+```
+inputs(n_tokens, emb_dim) * Routing matrix(emb_dim, n_experts) = Experts selector matrix(n_tokens, n_experts)
+```
+
+For ex. We are choosing 2 out of 3 experts and there 4 tokens. the ES matrix is as:
+
+```
+[1,2,3],
+[5,2,4],
+[9,0,4],
+[8,2,0]
+```
+
+- We put -inf to remaining lower values by keeping 2 max values as it is.
+
+```
+[-inf,2,3],
+[5,-inf,4],
+[9,-inf,4],
+[8,2,-inf]
+```
+
+- Hit it with softmax
+
+```
+[0,0.36,0.64],
+[0.55,0,0.45],
+[0.78,0,0.22],
+[0.9,0.1,0]
+```
+
+-   This means that expert1, expert2 and expert3 should be given respective attention based on each the token. And at the end we just `multiply the weight factors` and `adding the expert's output`.
