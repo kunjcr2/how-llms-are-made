@@ -127,4 +127,8 @@ Size of cache = l*b*nl*s*2
 
 - We basically have to apply `RoPE` to the query in `MLA` but when we do so directly, we loose absorbed query and hence leading to calculating Keys matrix EVERYTIME which is a lots of computation as before, we were absorbing `W_uk` and hence `K.T` was coming from cache only but now we have to calculate it.
 - To get rid of it, we work i around by dividing query and keys into two parts and what do we do with two parts ? Go and look at `./assets/MLA+RoPE.png` as well as `Page 6-8 in ./deepseekV3.pdf`.
- 
+
+10. `Mixture of Experts` or `MoE` is now the second founding of deepseek team. They insteead of having a dense layer in FFNN, broke it down into smaller experts of much smaller dimension. What happens is, if a token comes in and it is a verb (for example), then only the expert who takes care of verbs, activates and the token procceds ahead. Instead of entire NN to run, there are just 1-2 experts which runs and this reduces efficiency cost and increases speed of training and inference.
+
+- Read more about it from the deepseek pdf.
+- We aplly something that we call as sparsity. Which is the method of breaking down the dense layer neural network into trainable experts.
