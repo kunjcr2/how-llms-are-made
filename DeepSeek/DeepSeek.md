@@ -166,4 +166,60 @@ For ex. We are choosing 2 out of 3 experts and there 4 tokens. the ES matrix is 
 [0.9,0.1,0]
 ```
 
--   This means that expert1, expert2 and expert3 should be given respective attention based on each the token. And at the end we just `multiply the weight factors` and `adding the expert's output`.
+- This means that expert1, expert2 and expert3 should be given respective attention based on each the token. And at the end we just `multiply the weight factors` and `adding the expert's output`.
+
+11. The issue is now that, if some experts are used more, then there is an issue of imbalance in experts where some experts are overly used and some underly. For that we have `Auxiliary loss`. It is basically added to training loss to penalize imbalance expert selection, pushing the routing function towards a uniform distribution.
+
+    - We start with calculating `Expert importance`, which is
+      sum of each column in ES weight matrix for [E1, E2, ... En]; respectively.
+    - Loss would be high if there is high coefficient of variation between expert importance (that we calculated).
+
+    ```
+    Coefficient Variation(CV) = Standard Distribution / Mean
+    ```
+
+    And this is where we get auxiliary loss,
+
+    ```
+    Auxiliary Loss = lambda*(CV)^2
+    ```
+
+    And this will be added to LLM training. When the params are being trained, means, the expert importance is coming together, means SD is reducing and mean is getting centered, leading to lower CV and hence lower Auxiliary loss.
+
+    - Now, another thing, `Load balancing`, as the issue is, expert importance is not same as equal token importance. We want to have each expert, having balanced tokens routed, so like we dont want something where an expert have 1 token with high confidence routed but other expert have 4 tokens with lower confidence.
+    - First we need to have expert probablity(Pi) of it being selected based on its importance.
+
+    ```
+    P1 is probability that Router will select E1. (E1 Importance / sum importance)
+    P2 is probability that Router will select E2. (E2 Importance / sum importance)
+    P3 is probability that Router will select E3. (E3 Importance / sum importance)
+    And so on...
+    ```
+
+    And also, another term `Fraction of tokens routed`,
+
+    ```
+    f1 is fraction of tokens routed to E1. (Tokens routed to E1 / n_tokens)
+    f2 is fraction of tokens routed to E2. (Tokens routed to E2 / n_tokens)
+    f3 is fraction of tokens routed to E3. (Tokens routed to E3 / n_tokens)
+    And so on...
+    ```
+
+    And finally we get,
+
+    ```
+    Load balance Loss = Scaling factor * n_experts * sum(fi*pi)
+    ```
+
+    - Basically, now experts with more importance to handle proportionally more tokens while the experts with lower importance to handle less tokens which basically descreases mismatch. This reduces overall imbalance.
+    - To avoid the experts shutting off, we can use `capacity factor`, We have smoething we call as expert capacity,
+
+    ```
+    Expert Capacity = Tokens per batch/n_experts * Capacity factor
+        where,
+        Tokens per batch = batch_size * context length * top_k
+            where,
+            top_k is number of experts chosen for each token.
+    ```
+
+    Means how many maximum tokens can be routed to an expert.
