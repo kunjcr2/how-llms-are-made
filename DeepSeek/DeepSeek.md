@@ -225,6 +225,7 @@ For ex. We are choosing 2 out of 3 experts and there 4 tokens. the ES matrix is 
     Means how many maximum tokens can be routed to an expert.
 
 12. There are `3 innovation` that Deepseek themselves did,
+
     - The first one being `Auxililary loss free load balancing`. The issue with scaling factor in load balancing is that, if its low, its negligible and we wwill have issues in load balancing across the experts while its high than we will have issues with training loss being very high elading to inefficient backpropogation. And hence they got rid of loss.
       - First we find average token load per expert (total experts used or total tokens routed / num_experts)
       - We see from that if the expert is 'Underloaded' or 'Overloaded'. And from there we calculate `load violation`.
@@ -244,4 +245,5 @@ For ex. We are choosing 2 out of 3 experts and there 4 tokens. the ES matrix is 
     - The Second innovation in `Shared experts`. We had issues of `Knowledge hybridity` and `Knowledge Redundancy` (Read those from DeepseekMoE paper), and that stopped us from having Specialized experts, which they wanted.
       - To get rid of second issue of knowledge redundancy, they had 2 sorts of experts. First is `Shared experts` and second is `Routed Experts`. Here, shared are ALWAYS ACTIVATED, for EACH TOKEN. And on the other hand, routed ones are selected through experts selctors matrix. This way we have redundant stuff on shared experts and then routed experts can do specilized tasks. And then the outputs are added together to have MoE output.
     - And finally, the last innovation is `Fine grained Expert segmentation`, we revoke the issue of `Knowledge hybridity`. We basically convert hidden layer of 4096 neurons in 4 parts with 1024 neurons but now we have 64 experts with 64 neurons each. SIMPLE. So that every expoert can become super specialized experts and can focus on single thing.
-    
+
+13. And finally the code. Go to `./Codes/deepseek_moe.ipynb`
