@@ -247,3 +247,6 @@ For ex. We are choosing 2 out of 3 experts and there 4 tokens. the ES matrix is 
     - And finally, the last innovation is `Fine grained Expert segmentation`, we revoke the issue of `Knowledge hybridity`. We basically convert hidden layer of 4096 neurons in 4 parts with 1024 neurons but now we have 64 experts with 64 neurons each. SIMPLE. So that every expoert can become super specialized experts and can focus on single thing.
 
 13. And finally the code. Go to `./Codes/deepseek_moe.ipynb`
+
+# Code challange: COMPLETE ENTIRE DEEPSEEK ARCHITECTURE
+## Do it in `./Codes/deepeseek_complete.ipynb`
