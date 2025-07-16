@@ -10,7 +10,7 @@ class RopeAttention(nn.Module):
     It is intended to be a stub for future development.
     """
 
-    def __init__(self, d_model, n_heads, kv_latent_dim):
+    def __init__(self, d_model, n_heads, kv_latent_dim, vocab_size):
         super().__init__()
         self.d_model = d_model # Dimensiweon of embeddings
         self.n_heads = n_heads # Number of heads
@@ -28,7 +28,7 @@ class RopeAttention(nn.Module):
         self.W_qr = nn.Linear(kv_latent_dim, d_model, bias = False) # Query projection for RoPE
         self.W_kr = nn.Linear(d_model, self.dh, bias = False) # Key projection for RoPE
 
-        self.W_o = nn.Linear(d_model, d_model, bias = False) # Output projection
+        self.W_o = nn.Linear(d_model, vocab_size, bias = False) # Output projection
         self.ln_kv = nn.LayerNorm(kv_latent_dim) # Layer norm for kv
         self.ln_kr = nn.LayerNorm(self.dh) # Layer norm for kr
 
