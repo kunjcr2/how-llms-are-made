@@ -5,9 +5,20 @@ import Rope
 
 class RopeAttention(nn.Module):
 
-    """A placeholder for the RopeAttention module.
-    This module currently does not implement any functionality.
-    It is intended to be a stub for future development.
+    """
+    RopeAttention module that implements a variant of the attention mechanism
+    with Rotary Position Embeddings (RoPE) and down-projection for queries, keys and values.
+
+    Args:
+        d_model (int): Dimension of the input embeddings.
+        n_heads (int): Number of attention heads.
+        kv_latent_dim (int): Latent dimension for keys and values after down-projection.
+        vocab_size (int): Size of the vocabulary for output projection.
+
+    Returns:
+        out (torch.Tensor): Output tensor after applying attention and projection.
+        c_kv (torch.Tensor): Key-value cache after down-projection.
+        k_r (torch.Tensor): RoPE cache for keys.
     """
 
     def __init__(self, d_model, n_heads, kv_latent_dim, vocab_size):
