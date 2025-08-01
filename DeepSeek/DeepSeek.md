@@ -250,3 +250,5 @@ For ex. We are choosing 2 out of 3 experts and there 4 tokens. the ES matrix is 
 
 # Code challange: COMPLETE ENTIRE DEEPSEEK ARCHITECTURE
 ## Do it in `./Codes/deepeseek_complete.ipynb`
+
+# Multi-Token predicition in a seprate file - `Multi-token prediction`.
