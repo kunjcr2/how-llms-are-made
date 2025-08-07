@@ -1,6 +1,6 @@
 import numpy as np
 
-class RMSNorm:
+class RMSNorm(object):
     def __init__(self, dim, epsilon=1e-8):
         self.dim = dim
         self.epsilon = epsilon
