@@ -1,5 +1,3 @@
-[Look at this video for everything TILL MLA attention](https://youtu.be/2TT384U4vQg)
-
 # 🪟 Sliding Window Attention & Longformer
 
 ## What is Sliding Window Attention?

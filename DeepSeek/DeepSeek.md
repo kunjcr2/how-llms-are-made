@@ -81,6 +81,8 @@
 
 > ## And that is where deepseek comes in which solved the problem using `Multihead Latent Attention`, where they got K-V memory requirement to low and Performance at High.
 
+[Look at this video for everything TILL MLA attention](https://youtu.be/2TT384U4vQg)
+
 ### 7. **`Multihead Latent Attention`**
 
 - Alright. So what we did here is,
@@ -249,6 +251,7 @@ For ex. We are choosing 2 out of 3 experts and there 4 tokens. the ES matrix is 
 13. And finally the code. Go to `./Codes/deepseek_moe.ipynb`
 
 # Code challange: COMPLETE ENTIRE DEEPSEEK ARCHITECTURE
+
 ## Do it in `./Codes/deepeseek_complete.ipynb`
 
 # Multi-Token predicition in a seprate file - `Multi-token prediction`.
