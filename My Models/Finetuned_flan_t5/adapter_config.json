@@ -1,7 +1,7 @@
 {
   "alpha_pattern": {},
   "auto_mapping": null,
-  "base_model_name_or_path": "google/flan-t5-base",
+  "base_model_name_or_path": "google/flan-t5-small",
   "bias": "none",
   "corda_config": null,
   "eva_config": null,
