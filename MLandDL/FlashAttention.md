@@ -1,3 +1,5 @@
+[FUCKING GOOD VIDEO](https://youtu.be/gBMO1JZav44?si=cKZDu5v2lZOZW0tp)
+
 # ⚡ What Happens Inside FlashAttention? (Step by Step)
 
 ## 1. **Start with Token Embeddings**
