@@ -1,11 +1,21 @@
 import gymnasium as gym
 
-env = gym.make("LunarLander-v3", render_mode="human")
+env = gym.make("CartPole-v1", render_mode="human")
 
-env.reset()
+eps = 10
 
-for step in range(200):
-    env.render()
-    env.step(env.action_space.sample()) # we are just passing in sample actions but once we have a policy function everything would work fine !
+for ep in range(eps):
+    state, info = env.reset()
+    done = False
+    total_reward = 0
+
+    while not done:
+        action = env.action_space.sample() # Policy function (a random)
+        state, reward, terminated, truncated, info = env.step(action)
+        
+        done = truncated or terminated
+        total_reward += reward
+
+    print(f'Episode {ep+1} finished with Reward - {total_reward}')
 
 env.close()
