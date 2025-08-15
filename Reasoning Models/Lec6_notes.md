@@ -1,0 +1,1 @@
+Talked about Markov Decision Property.

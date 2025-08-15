@@ -22,4 +22,6 @@ $G_t$ = $R_{t+1}$ + r\*$R_{t+2}$ + $r^2R_{t+2}$ + ...
 
 So this is the property where we Assume or sometimes even prove that to get the action of next state, we ONLY need the previous state and not ALL the previous state.
 
-Conffusin, right ? In chess, we dont need to know what happened in apst, our current state is enough to do actions on the state while being in a middle of a conversation with someone, we need to know past conversation.
+Conffusin, right ? In chess, we dont need to know what happened in past, our current state is enough to do actions on the state while being in a middle of a conversation with someone, we need to know past conversation.
+
+And the processes that holds this property of not needing to knowall the past states, are called _Markov Decicion Property_ !
