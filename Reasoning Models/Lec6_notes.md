@@ -29,7 +29,7 @@
 
    $V_{\pi}(s)=E_{\pi}(\sum_{k=0}^{\infty}(\gamma)^kR_{t+k+1}|S_t=s, A_t=a)$
 
-   - ![alt text](bellman.png)
+   - ![Bellman's equation](bellman.png)
    - The above is the bellman's equation! It state that we can show value function of S in terms of value function of $S^l$ for each state based on each actions possible.
 
 3. **Optimal Policy-**
