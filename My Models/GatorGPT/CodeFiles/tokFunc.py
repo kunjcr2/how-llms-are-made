@@ -18,15 +18,15 @@ def token_ids_to_text(token_ids, tokenizer):
 ############################################################################
 
 ###################################### CREATES DATA LOADERS
-def create_dataloader_v1(txt, batch_size=4, max_length=256,
+def create_dataloader(txt, batch_size=4, max_length=256,
                          stride=128, shuffle=True, drop_last=True,
-                         num_workers=-1):
+                         num_workers=0): # Changed default to 0
 
     # Initialize the tokenizer
     tokenizer = tiktoken.get_encoding("p50k_base")
 
     # Create dataset
-    dataset = GPTDataset(txt, tokenizer, max_length, stride)
+    dataset = GatorGPTDataset(txt, tokenizer, max_length, stride)
 
     # Create dataloader
     dataloader = DataLoader(
@@ -34,7 +34,7 @@ def create_dataloader_v1(txt, batch_size=4, max_length=256,
         batch_size=batch_size,
         shuffle=shuffle,
         drop_last=drop_last,
-        num_workers=-1
+        num_workers=num_workers # Pass the potentially modified num_workers
     )
 
     return dataloader

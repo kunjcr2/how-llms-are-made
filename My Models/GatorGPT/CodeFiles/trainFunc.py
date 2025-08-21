@@ -5,8 +5,19 @@ from tokFunc import *
 # Caluclates loss for a batch
 def calc_loss_batch(input_batch, target_batch, model, device):
     input_batch, target_batch = input_batch.to(device), target_batch.to(device)
+
+    # For other devices
     logits = model(input_batch)
     loss = torch.nn.functional.cross_entropy(logits.flatten(0, 1), target_batch.flatten())
+
+    # For A100s
+    # with autocast(device_type="cuda", dtype=torch.bfloat16):
+    #     logits = model(input_batch)
+    #     loss = torch.nn.functional.cross_entropy(
+    #         logits.flatten(0, 1),
+    #         target_batch.flatten()
+    #     )
+
     return loss
 ############################################################################
 
@@ -69,10 +80,9 @@ def generate_text_simple(model, idx, max_new_tokens, context_size):
 ############################################################################
 
 ###################################### GENERATING AND PRINTING SAMPLES
-def generate_and_print_sample(model, tokenizer, device, start_context):
+def generate_and_print_sample(model, tokenizer, device, start_context, context_size):
   # we print out, what the model is generating right now at the end of each epoch. Also, we print 50 items!
   model.eval()
-  context_size = model.pos_emb.weight.shape[0]
   encoded = text_to_token_ids(start_context, tokenizer).to(device)
 
   with torch.no_grad():

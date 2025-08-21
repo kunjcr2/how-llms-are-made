@@ -11,7 +11,7 @@ class Block(nn.Module):
         n_heads: int = 8,
         gqa_groups: int = 2,
         max_len: int = 1024,
-        d_ff: int = 960,
+        d_ff: int = 768,
         eps: float = 1e-5,
         dropout_p: float = 0.0,  # keep 0.0 for pretrain
     ):

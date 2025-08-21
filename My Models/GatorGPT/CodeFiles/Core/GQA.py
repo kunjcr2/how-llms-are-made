@@ -9,7 +9,7 @@ class GQA(nn.Module):
                  n_heads: int = 8,
                  gqa_groups: int = 2,
                  max_len: int = 1024,
-                 device=None):
+                ):
         super().__init__()  # initialize base Module
         assert d_model % n_heads == 0, "d_model must be divisible by n_heads"  # validate head split
         assert n_heads % gqa_groups == 0, "n_heads must be divisible by gqa_groups"  # validate grouping
@@ -20,7 +20,6 @@ class GQA(nn.Module):
         self.head_dim = d_model // n_heads  # compute per-head dimension
         self.n_kv_heads = n_heads // gqa_groups  # compute number of K/V heads for GQA
         self.max_len = max_len  # store max sequence length
-        self.device = device  # remember the preferred device (can be None)
 
         # Define bias-free linear projections
         self.q_proj = nn.Linear(d_model, n_heads * self.head_dim, bias=False)  # Q projection: d_model -> H*D
@@ -32,20 +31,11 @@ class GQA(nn.Module):
         self.rope_q = Rope(d_model=n_heads * self.head_dim, max_len=max_len)  # RoPE for Q (expects (B,T,H*D))
         self.rope_k = Rope(d_model=self.n_kv_heads * self.head_dim, max_len=max_len)  # RoPE for K (expects (B,T,H_kv*D))
 
-        # Move module parameters and buffers to the target device if provided
-        if self.device is not None:  # if a specific device was requested
-            self.to(self.device)  # place the whole module on that device
-
     def forward(self,
                 x: torch.Tensor,  # (B, T, d_model)
                 attention_mask: torch.Tensor | None = None  # (B, T) 1=real,0=pad (ignored: no attention bias)
                 ) -> torch.Tensor:  # returns (B, T, d_model)
         B, T, C = x.shape  # unpack input shape
-        dev = self.device if self.device is not None else x.device  # decide working device
-        if self.device is not None:  # if device fixed, move inputs accordingly
-            x = x.to(dev)  # place input on requested device
-        else:
-            self.to(dev)  # otherwise keep module on the input's device for simplicity
 
         # Linear projections for Q, K, V
         q = self.q_proj(x)  # (B, T, H*D)
