@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.attention import sdp_kernel, SDPBackend
+from torch.nn.attention import sdpa_kernel, SDPBackend
 
 # 🧠 Custom MHA block using scaled_dot_product_attention
 class MyAttentionBlock(nn.Module):
@@ -31,7 +31,7 @@ class MyAttentionBlock(nn.Module):
         #     scaled_dot_product_attention(...)
 
         # 🧠 FlashAttention + causal + compile-friendly
-        with sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=False, backends=SDPBackend.FLASH_ATTENTION):
+        with sdpa_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=False, backends=SDPBackend.FLASH_ATTENTION):
             out = F.scaled_dot_product_attention(q, k, v, is_causal=True)
 
         # [B, H, N, D] -> [B, N, C]
