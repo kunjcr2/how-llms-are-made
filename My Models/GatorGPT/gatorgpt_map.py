@@ -14,7 +14,7 @@ Original file is located at
 4. Loading **roneneldan/TinyStories** from huggingface datasets and getting both slpits. It is a pretraining corpus so we dont care about order of stories and stuff.
 """
 
-# !nvidia-smi
+!nvidia-smi
 
 # Commented out IPython magic to ensure Python compatibility.
 # %pip install torchinfo --quiet
@@ -36,10 +36,12 @@ import multiprocessing as mp
 import tiktoken # Tokenizer with p50k base vocab. Size - 50281
 tok = tiktoken.get_encoding("p50k_base")
 
+import wandb
+
 from datasets import load_dataset
 dataset = load_dataset("roneneldan/TinyStories", split="train") # 2.2M training stories
 
-TRAINING_CUTOFF=1_500_000
+TRAINING_CUTOFF=100_00
 data = pd.DataFrame(dataset)[:TRAINING_CUTOFF] # Into a dataframe.
 
 """# Architecture
@@ -539,7 +541,7 @@ def train_model_simple(
     try:
         for epoch in range(num_epochs):
             model.train()
-            epoch_steps = 0
+            epoch_steps = 0  # Batches processed in current epoch (resets each epoch)
             epoch_loss = 0.0
 
             for input_batch, target_batch in train_loader:
@@ -548,9 +550,9 @@ def train_model_simple(
 
                 optimizer.zero_grad()
                 loss = calc_loss_batch(input_batch, target_batch, model, device)
-                train_losses.append(loss.item())
                 loss.backward()
                 optimizer.step()
+                train_losses.append(loss.item())
 
                 tokens_seen += input_batch.numel()
                 global_step += 1  # Increment total step counter (never resets)
@@ -577,6 +579,12 @@ def train_model_simple(
                         print(f"Step {global_step}: Val loss improved to {val_loss:.3f}")
                     else:
                         patience_counter += 1
+
+                    wandb.log({
+                        "train_loss": loss.item(),
+                        "val_loss": val_loss,
+                        "tokens_seen": tokens_seen,
+                    })
 
             # End of epoch - minimal output
             if epoch_steps > 0:
@@ -609,23 +617,18 @@ model = GatorGPT(
 model = model.to(device) # To cuda, compiling before running
 model = torch.compile(model, fullgraph=True, mode="reduce-overhead")
 
-optim = torch.optim.AdamW(model.parameters(), lr=3e-4, eps=1e-08, weight_decay=0.01)
+optim = torch.optim.AdamW(model.parameters(), lr=0.01, eps=1e-08, weight_decay=0.01)
 
-cfg = {
-    "num_epochs": 1,
-    "eval_freq": 5000,
-    "eval_iter": 1000,
-    "patience": 3,
-    "sample_tokens": 1024,
-    "progress_chunks": 20,
-}
+# wandb.init(project='GatorGPT', config={"num_epochs": 3, "eval_freq": 5000, "eval_iter": 1000, "patience": 3, "sample_tokens": 1024, "progress_chunks": 20})
+wandb.init(project='GatorGPT', config={"num_epochs": 3, "eval_freq": 50, "eval_iter": 10, "patience": 3, "sample_tokens": 1024, "progress_chunks": 20})
+cfg = wandb.config
 
 CONTEXT = "We ran across a field that was"
 train_tokens, val_tokens = fast_prepare_data(data)
 
 train_loader = create_fast_dataloader(
     train_tokens,
-    batch_size=16,
+    batch_size=32,
     max_length=512,
     stride=256,
     shuffle=True
@@ -633,13 +636,11 @@ train_loader = create_fast_dataloader(
 
 val_loader = create_fast_dataloader(
     val_tokens,
-    batch_size=16,
+    batch_size=32,
     max_length=512,
     stride=256,
     shuffle=False
 )
-
-len(train_loader)
 
 print("Total Training tokens:", len(train_tokens))
 print("Total Validation tokens:", len(val_tokens))
@@ -658,9 +659,11 @@ train_losses, val_losses, tokens_seen = train_model_simple(
     cfg=cfg,
 )
 
+wandb.finish()
+
 """# Saving files to Huggingface"""
 
-# !pip install -q huggingface_hub
+!pip install -q huggingface_hub
 
 import torch, json, shutil
 from pathlib import Path
