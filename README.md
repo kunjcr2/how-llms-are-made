@@ -1,56 +1,34 @@
 # How LLMs Are Made
 
-This repository is a comprehensive guide and implementation walkthrough of Large Language Models (LLMs), from basic concepts to advanced architectures. It includes theoretical explanations, practical implementations, and real-world examples of various LLM architectures.
+This repository is a comprehensive guide and implementation walkthrough of Large Language Models (LLMs), from fundamentals to advanced architectures. It includes theory, hands-on notebooks, implementations, and trained artifacts.
 
-## 📚 Repository Structure
+## 📁 New Repository Layout
 
-### 1. GPT (Generative Pre-trained Transformer)
+- **tutorials/**: Step-by-step, topic-focused walkthroughs
+  - **tutorials/gpt/**: Tokenizer, attention, architecture, training, post-training, fine-tuning
+  - **tutorials/deepseek/**: MoE, RoPE, latent attention, MTP; with code and assets
+- **docs/**: Conceptual docs and notes
+  - **docs/ml-and-dl/**: Core ML/DL concepts, attention variants, backprop, GLU, vLLM, RAG
+  - **docs/mod/**: Mixture of Dendrites (Kimi) notes
+- **models/**: Your trained models and implementation projects
+  - Includes `GatorGPT`, LoRA adapters, checkpoints, config, inference helpers
+- **research/**
+  - **research/papers/**: PDFs and references used in the repo
+- **deployments/**: Deployment-related artifacts (e.g., Dockerfiles, guides)
 
-The GPT section covers the fundamental architecture of modern LLMs:
+Note: Original folders are preserved inside the new sections to honor the no-delete rule.
 
-- **1_tokenizer**: Implementation of tokenization techniques with example texts
-- **2_attention**: Detailed explanation of attention mechanisms with visualizations
-- **3_architecture**: Complete GPT architecture implementation and explanation
-- **4_training**: Training methodology and practices
-- **5_post_training**: Post-training optimization techniques
-- **6_finetune**: Full fine-tuning and LoRA adaptation methods
+## 🧭 Quick Start Navigation
 
-### 2. DeepSeek
+- Learn GPT end-to-end: `tutorials/gpt/`
+- Explore DeepSeek internals: `tutorials/deepseek/`
+- Read core theory: `docs/ml-and-dl/`
+- MoD (Kimi) notes: `docs/mod/`
+- See working models: `models/` (start with `models/GatorGPT/README.md`)
+- Skim references: `research/papers/`
+- Deployment bits: `deployments/`
 
-Implementation and explanation of DeepSeek's advanced architectures:
-
-- **Mixture of Experts (MoE)**: Implementation of expert-based models
-- **Multi-head Latent Attention**: Advanced attention mechanisms
-- **Position Embeddings**: RoPE (Rotary Position Embedding) implementation
-- Technical and theoretical documentation available in markdown files
-
-### 3. MLandDL
-
-Core Machine Learning and Deep Learning concepts:
-
-- BackPropagation implementation (based on Andrej Karpathy's work)
-- General backpropagation theory
-- Prompting techniques and strategies
-
-### 4. Kimi
-
-Documentation about Mixture of Dendrites (MoD):
-
-- Theoretical explanations
-- Implementation details
-- Working principles
-
-### 5. My Models
-
-Custom implementations including:
-
-- **GatorGPT**: A lightweight transformer model with:
-  - Grouped Query Attention
-  - RoPE embeddings
-  - SwiGLU activation
-  - vLLM deployment setup
-
-## 🛠️ Getting Started
+## 🛠️ Setup
 
 ### Prerequisites
 
@@ -60,48 +38,38 @@ Custom implementations including:
 - tiktoken (for tokenization)
 - vLLM (for deployment)
 
-### Installation
+### Clone
 
 ```bash
 git clone https://github.com/kunjcr2/how-llms-are-made.git
 cd how-llms-are-made
 ```
 
-## 📓 Notebooks
+## 📓 Notebooks Index
 
-The repository contains multiple Jupyter notebooks that demonstrate:
+- Tokenizer: `tutorials/gpt/1_tokenizer/LLM_tokenizer.ipynb`
+- Attention: `tutorials/gpt/2_attention/LLM_attention.ipynb`
+- Architecture: `tutorials/gpt/3_architecture/LLM_GPT_arch.ipynb`
+- Training: `tutorials/gpt/4_training/LLM_training.ipynb`
+- Post-training: `tutorials/gpt/5_post_training/LLM_post_training.ipynb`
+- Fine-tuning: `tutorials/gpt/6_finetune/`
 
-1. Tokenizer implementation and usage
-2. Attention mechanism visualization
-3. Complete architecture implementation
-4. Training and fine-tuning procedures
-5. Model deployment strategies
+DeepSeek examples and writeups: `tutorials/deepseek/`
 
-## 🚀 Models
+## 🚀 Highlight: GatorGPT
 
-### GatorGPT
-
-- Lightweight transformer model
-- Trained on TinyStories dataset
-- Uses modern architecture choices:
-  - Grouped Query Attention
-  - RoPE embeddings
-  - SwiGLU activation
-  - Efficient vLLM deployment
+- Lightweight transformer
+- Modern choices: Grouped Query Attention, RoPE, SwiGLU
+- Training and data pipeline included
+- Deployment with vLLM; see `models/GatorGPT/README.md`
 
 ## 📖 Documentation
 
-Each section contains detailed documentation:
-
-- Markdown files explaining theoretical concepts
-- Implementation notes
-- Architecture diagrams
-- Training procedures
-- Deployment guidelines
+See `docs/` for theory, diagrams, and implementation notes across topics.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please open an issue or PR.
 
 ## 📝 License
 
