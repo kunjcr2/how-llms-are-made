@@ -36,7 +36,7 @@ So:
 ```mermaid
 flowchart LR
     A[Token Input] --> B[Linear Transform → A]
-    A --> C[Linear Transform → B (Gate)]
+    A --> C[Linear Transform → B[Gate]]
     C -->|Sigmoid| D[Gate Values 0-1]
     B --> E[Element-wise Multiply]
     D --> E
