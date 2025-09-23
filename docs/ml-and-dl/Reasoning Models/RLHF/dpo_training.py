@@ -250,7 +250,7 @@ tok.save_pretrained("ckpt_dpo_qwen05b_refrozen")
 from pathlib import Path
 from huggingface_hub import create_repo, login
 
-login(token="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")
+login(token="hf_...")
 USERNAME = "kunjcr2"   # or org
 REPO_ID = f"{USERNAME}/qwen2.5-0.5b-sft-dpo"  # single repo
 
