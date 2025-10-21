@@ -4,7 +4,7 @@ Few small concepts. **Greedy Policy** is where we choose the action with highest
 
 - **Policy** is denoted by PI.
 
-- **Expected Return**: The goal is not about maximizing the reward, its about maximizing the RETURN which is addition of all the rewards so far. It is called as _Expected Returns_. Denoted by **G_t**.
+- **Expected Return**: The goal is not about maximizing the reward, its about maximizing the RETURN which is addition of all the rewards from that point to the end of episode. It is called as _Expected Returns_. Denoted by **G_t**.
 
 $G_t$ = $R_{t+1}$ + $R_{t+2}$ + ... + $R_T$
 
