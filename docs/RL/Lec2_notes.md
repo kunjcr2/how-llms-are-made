@@ -1,217 +1,80 @@
-# Reinforcement Learning — Classical Foundations
+This is an excellent topic! The concepts of Value and the Model are integral to understanding how a Reinforcement Learning (RL) agent perceives its environment, evaluates its decisions, and ultimately finds an optimal course of action.
 
-This lecture built directly on the **four basic elements of RL** (policy, rewards, values, and model) and introduced the mathematical foundation of how agents *learn to act optimally*. We’ll walk through each concept and then the algorithms that implement them.
-
----
-
-## 1. Recap of the Four Elements of RL
-
-1. **Policy (π):**
-
-   * The “behavior” of the agent.
-   * Given a state, the policy decides which action to take.
-   * Without a policy, the agent just acts randomly (like in our Lunar Lander example).
-
-2. **Reward (R):**
-
-   * The immediate feedback from the environment after each action.
-   * Represents *short-term desirability*.
-
-3. **Value (V):**
-
-   * Long-term desirability.
-   * Instead of just looking at one reward, we sum up all **future discounted rewards** the agent can collect starting from a state.
-
-4. **Model (of the environment):**
-
-   * Describes how the world works (state transitions + rewards).
-   * In practice, many RL settings are **model-free**, meaning we don’t know the exact model.
+Drawing from the sources, here is a detailed discussion covering both concepts, structured for clarity and including the requested intuitive context.
 
 ---
 
-## 2. Markov Property
+## 1. The Concept of Value
 
-* A state is **Markovian** if the future depends **only on the present state**, not on the full history.
-* Example: Chess board configuration = Markovian (no need to know the previous moves).
-* RL usually assumes **Markov Decision Processes (MDPs)**.
+Value is one of the four foundational elements of reinforcement learning, alongside policy, rewards, and the environment model. It provides a critical measure for decision-making by considering the future impact of a state or action.
 
----
+### Intuition: Long-Term Desirability
 
-## 3. Value Functions
+The primary distinction is that **Value is fundamentally different from immediate rewards**. While rewards concern only short-term desirability, **Value focuses on the long-term desirability of the state**.
 
-### 3.1 State Value Function (**Vπ(s)**)
+Instead of just looking at single rewards, the Value calculation involves **adding all the rewards together** until the end of the episode to evaluate the resulting **return ($G_t$)** received by the agent. Later rewards are discounted by a factor ($\gamma$) because **immediate rewards are more valuable** than those received later in the trajectory.
 
-* Measures how *good* it is to be in a state **s**, if the agent follows a policy π afterward.
+### Types of Value Functions
 
-* Formally:
+The sources identify two essential value functions, both aiming to estimate the expected return:
 
-  $$
-  V^\pi(s) = \mathbb{E}[G_t \mid S_t = s]
-  $$
+#### A. State Value Function ($V_{\pi}(s)$)
 
-  where $G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \dots$
+The state value function is formally defined as the **expected return** the agent receives, starting in a specific state ($s$) and following a particular policy ($\pi$) thereafter until the end of the episode.
 
-* **γ (gamma):** Discount factor (0 < γ < 1) → prioritizes immediate rewards over distant ones.
+- **Notation:** It is consistently denoted by the symbol $V_{\pi}(s)$ across RL literature.
+- **Estimation:** To calculate the value of a state, the agent may run multiple episodes (e.g., 10 episodes), determine the return for each episode ($G_t$), sum them up, and then divide by the total number of episodes to calculate the **mean (expected value)** of the returns.
 
----
+#### B. Action Value Function ($Q(s, a)$)
 
-### 3.2 Action Value Function (**Qπ(s, a)**)
+The action value function quantifies the value associated with a specific action taken in a specific state.
 
-* Measures how good it is to take action **a** in state **s**, and then follow policy π.
+- **Notation:** It is denoted by the famous and frequently repeated symbol $Q(s, a)$.
+- **Definition:** It is formally defined as the **expected return starting in a state, taking an action, and then following a policy thereafter**.
+- **Utility:** The value of states and actions (the Q values) are highly useful for implementation because they provide direct information: an agent can look at the Q table and see which action has the highest Q value for a given state. An agent's policy can be formed by telling it to **always choose the action with the maximum Q value**.
+- **Relation to $V(s)$:** The relationship between $Q(s, a)$ and $V(s)$ depends entirely on the policy chosen by the agent. If the policy dictates choosing action $A_1$, then $Q(s, A_1)$ will exactly match $V(s)$.
 
-* Formally:
+### Value Estimation via Bellman Equations
 
-  $$
-  Q^\pi(s, a) = \mathbb{E}[G_t \mid S_t = s, A_t = a]
-  $$
+Estimating the value function is often referred to as the **prediction problem** in RL [23, 15:57]. This process was significantly simplified by Richard Bellman's key finding:
 
-* Relationship with Vπ(s):
-
-  * If π always chooses action a in state s → then Qπ(s, a) = Vπ(s).
-
----
-
-## 4. Bellman Equations
-
-### 4.1 Bellman Expectation Equation
-
-* Richard Bellman (1950s) showed that value functions satisfy a **recursive relation**:
-
-$$
-V^\pi(s) = \mathbb{E}[R_{t+1} + \gamma V^\pi(S_{t+1})]
-$$
-
-* “The value of a state = expected immediate reward + expected discounted value of next state.”
+1.  **The Recursive Nature (Bellman Equation):** Bellman stated that the value of being in a state ($V(s)$) can be expressed recursively in terms of the value of the next state ($V(s')$).
+    - **Intuition:** The value of a state is equal to the expected immediate reward ($R$) plus the **discounted expected value of the next state** ($\gamma \cdot V(s')$). This recursive relationship is powerful and is at the heart of algorithms used in complex applications.
+2.  **The Optimal Choice (Bellman Optimality Equation):** This equation extends the basic Bellman equation to define the best possible value by selecting the action that maximizes the expected return.
+    - The optimal action is chosen by selecting the **maximum** of the immediate reward plus the discounted value of the next state: $\max_a (R + \gamma \cdot V(s'))$ [41, 28:28].
+    - This is equivalent to finding the **maximum of the action value functions** for all possible actions: $\max (Q(s, a))$. Solving for this maximum allows the agent to confidently choose the optimal action for every state.
 
 ---
 
-### 4.2 Bellman Optimality Equation
+## 2. The Role of the Model
 
-* For the **optimal policy**, the best value is achieved by taking the action with maximum Q-value:
+The Model of the environment is defined by the necessary information to determine the dynamics of the system, primarily requiring knowledge of the **transition probabilities** from one state ($S$) to the next state ($S'$) [77, 78, 55:49].
 
-$$
-V^*(s) = \max_a \Big( R(s,a) + \gamma V^*(s') \Big)
-$$
+RL methods are categorized based on whether they use or require a model: Model-Based or Model-Free.
 
-This tells us how to pick the **best action** in each state.
+### A. Model-Based Methods (Dynamic Programming)
 
----
+Model-based methods, such as Dynamic Programming (DP), **require a complete model of the environment**.
 
-## 5. Dynamic Programming (DP)
+- **Process:** DP methods use the iterative application of the Bellman equations to estimate the optimal value functions. This process involves repeating two steps—**policy evaluation** (estimating $V_{\pi}(s)$ for a given policy) and **policy improvement** (changing the policy to maximize Q values).
+- **Practical Challenge:** Dynamic Programming is currently **not used in practice**. This is because requiring a complete model—knowing the exact probability of transitioning from $S$ to $S'$—is often **impossible to obtain in most cases**. For example, when training an agent to play chess, it is extremely hard to acquire the probability of transitioning between specific board configurations [78, 56:16]. Furthermore, DP often requires solving hundreds of simultaneous equations, which is computationally expensive [55:08, 55:14, 55:20].
 
-* Early method for solving RL problems (when the model of environment is **known**).
-* Two key steps:
+### B. Model-Free Methods
 
-  1. **Policy Evaluation** → Estimate Vπ(s) for a fixed policy.
-  2. **Policy Improvement** → Update the policy by choosing actions with the highest Q-value.
-* Repeat evaluation + improvement until convergence = **Policy Iteration**.
+Model-free methods are preferred because they **do not require a model of the environment**. They learn directly through **raw experience**.
 
-👉 Limitation: Requires **knowing the model** (transition probabilities), which is impractical in most real-world tasks.
+#### 1. Monte Carlo (MC) Methods
 
----
+MC methods learn by **simulating a large number of episodes** and collecting raw experience.
 
-## 6. Monte Carlo (MC) Methods
+- **Process:** The agent calculates the return (sum of discounted rewards) for all visited states and actions. The final estimate of the action value function ($Q(s, a)$) is the **average of all the returns** received for that state-action pair across all episodes [85, 135:59].
+- **Intuition:** MC is like updating your knowledge only after the _entire_ episode is complete. You must wait to receive all future rewards before updating your value function estimate.
+- **Action Selection:** MC uses the estimated $Q(s, a)$ values to determine the policy, typically employing an **epsilon greedy policy** to balance exploitation (choosing the action with maximum $Q$ value) and exploration (taking random actions). Exploration is necessary to ensure the agent encounters all states and actions, preventing it from missing an optimal path.
 
-* **Model-free**: Learn from *experience (episodes)* instead of knowing the full environment.
+#### 2. Temporal Difference (TD) Methods
 
-* Idea:
+Temporal Difference methods are considered the **"best of both worlds"**. They combine learning from raw experience (like MC) with updating estimates based on other learned estimates (like DP). TD methods are highly useful in practice due to their efficiency.
 
-  * Run many episodes.
-  * For each state/action, average the **returns** observed after visiting it.
-  * Update value/Q estimates with these averages.
-
-* **Monte Carlo Prediction:** Estimates Vπ(s).
-
-* **Monte Carlo Control:** Uses Q(s, a) and an **ε-greedy policy** to improve action choices.
-
-👉 Drawback: Updates happen **only at the end of an episode**.
-
----
-
-## 7. Temporal Difference (TD) Methods
-
-* Combine the best of both worlds:
-
-  * Like MC: model-free.
-  * Like DP: update **incrementally at each step**, not just at the end.
-
-* **TD Update Rule:**
-
-  $$
-  V(s) \leftarrow V(s) + \alpha \Big[ R + \gamma V(s') - V(s) \Big]
-  $$
-
-* Key Algorithms:
-
-  1. **SARSA (On-policy):**
-     Updates Q(s, a) using the *actual action* taken under the ε-greedy policy.
-
-     $$
-     Q(s,a) \leftarrow Q(s,a) + \alpha \Big[ R + \gamma Q(s',a') - Q(s,a) \Big]
-     $$
-
-  2. **Q-Learning (Off-policy):**
-     Uses the **max over next actions**, regardless of the policy’s exploration.
-
-     $$
-     Q(s,a) \leftarrow Q(s,a) + \alpha \Big[ R + \gamma \max_{a'} Q(s',a') - Q(s,a) \Big]
-     $$
-
-👉 Q-learning is the algorithm DeepMind used to train agents to play Atari games.
-
----
-
-## 8. Exploration vs. Exploitation
-
-* If you always exploit (pick best action) → you might miss better paths.
-* If you always explore (random actions) → you won’t learn efficiently.
-* **ε-greedy policy** balances this:
-
-  * With probability (1−ε), exploit.
-  * With probability (ε), explore randomly.
-* Over time, ε is **decayed** (more exploration early, more exploitation later).
-
----
-
-## 9. Practical Example: Lunar Lander
-
-* Using OpenAI Gymnasium:
-
-  * **Monte Carlo Agent:** Updates Q-table after each episode.
-  * **TD Agent (Q-learning):** Updates Q-values after every step.
-
-* Observations:
-
-  * Monte Carlo → slower, updates only at episode end.
-  * TD (Q-learning) → more efficient, learns faster, produces smoother landings.
-
-* Visualization with **TensorBoard** helps track rewards improving over episodes.
-
----
-
-# Summary of the “Three Horsemen” of Classical RL
-
-1. **Dynamic Programming (DP):**
-
-   * Needs full model (impractical in real life).
-   * Good for theory.
-
-2. **Monte Carlo (MC):**
-
-   * Model-free, learns from episodes.
-   * Updates only at episode end → slow.
-
-3. **Temporal Difference (TD):**
-
-   * Model-free, updates each step.
-   * Efficient, practical.
-   * Core of modern RL algorithms (SARSA, Q-learning, and beyond).
-
----
-
-✅ By now you should have:
-
-* A clear sense of what **value functions (V and Q)** mean.
-* Why **Bellman equations** are central.
-* How **DP, MC, and TD** connect historically.
-* Why **Q-learning** became the backbone of modern RL.
+- **Efficiency Intuition:** Unlike MC, which waits for the entire episode to complete, TD makes **incremental updates after each step**. This is similar to how humans think and make updates—incrementally, rather than waiting until the final outcome.
+- **Mechanism:** TD solves the challenge of waiting for the final return by **approximating the return** using the immediate reward plus the discounted estimated value of the next state. This uses the structure of the Bellman equation to define the update target (the "TD target").
+- **Algorithms:** Q-learning and SARSA are prominent examples of TD methods. These algorithms efficiently update the action value function ($Q(s, a)$). Q-learning, for instance, uses a maximum operation derived from the Bellman optimality equation when calculating the update target.
