@@ -80,6 +80,7 @@ We start with ε = 1 (completely random) and slowly reduce it as the agent becom
 
 Example (simplified code):
 
+```python
 import random, torch
 
 def select_action(net, state, epsilon, n_actions):
@@ -87,7 +88,7 @@ def select_action(net, state, epsilon, n_actions):
         return random.randrange(n_actions)
     q_values = net(state)          # predict Q-values for all actions
     return int(q_values.argmax())  # choose action with max Q-value
-
+```
 
 ⸻
 
@@ -100,13 +101,13 @@ To fix this, we store all past experiences (state, action, reward, next_state) i
 During training, we pick random batches from this buffer, breaking the correlation and stabilizing learning.
 
 Simplified view:
-
+```python
 buffer = []
 # Store transitions
 buffer.append((s, a, r, s_next))
 # Later, sample randomly
 batch = random.sample(buffer, batch_size)
-
+```
 
 ⸻
 
@@ -117,10 +118,10 @@ If we use the same network to calculate both the prediction and the target, both
 To avoid this, we make a copy of the network, called the target network.
 It is updated only once every few thousand steps.
 This gives us a fixed target for a while.
-
+```python
 def update_target(target_net, main_net):
     target_net.load_state_dict(main_net.state_dict())
-
+```
 
 ⸻
 
@@ -152,7 +153,7 @@ Linear(3) → outputs Q-values for each action
 Each output represents the Q-value for one action: up, down, or no-op.
 
 Minimal code sketch:
-
+```python
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -173,7 +174,7 @@ class DQN(nn.Module):
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
         return self.fc2(x)
-
+```
 
 ⸻
 
