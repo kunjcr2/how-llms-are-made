@@ -1,3 +1,9 @@
+#######################################################
+# THIS CODE HAS MULTIPLE CRITICAL ISSUES. 
+# CHECK BEFORE MOVING AHEAD
+# TRAINING MAY BE UNSTABLE.
+#######################################################
+
 # pip install -U "transformers>=4.44" "trl>=0.12" datasets accelerate peft bitsandbytes
 
 # Getting some imports
@@ -10,7 +16,7 @@ from trl import (
     SFTTrainer, SFTConfig,
     RewardTrainer, RewardConfig,
     PPOTrainer, PPOConfig,
-    AutoModelForCausalLMWithValueHead
+    AutoModelForCausalLM 
 )
 from peft import LoraConfig # Lora configs for Lora model.
 
@@ -32,8 +38,7 @@ def sft_text(p, a):
 chat = chat.map(lambda ex: {"text": sft_text(ex["prompt"], ex["response"])}, # we use text value
                 remove_columns=chat.column_names)
 
-# This is the policy where we get a certain reward of how good the policy is with a single head.
-policy_sft = AutoModelForCausalLMWithValueHead.from_pretrained(  # <-- VALUE HEAD
+policy_sft = AutoModelForCausalLM .from_pretrained( 
     BASE_ID, device_map="auto", load_in_4bit=True
 )
 peft_cfg = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.05, bias="none", task_type="CAUSAL_LM")
@@ -51,8 +56,7 @@ sft_tr.train()
 sft_tr.model.save_pretrained("ckpt_sft_qwen05b_vhead"); tok.save_pretrained("ckpt_sft_qwen05b_vhead")
 
 # ---------- 2) Reward Model (pairwise) ----------
-rm_base = "microsoft/deberta-v3-small"
-rm_tok  = AutoTokenizer.from_pretrained(rm_base, use_fast=True)
+rm_tok  = AutoTokenizer.from_pretrained(BASE_ID, use_fast=True)
 
 # This is a sentence classifier model which can be trained to be a reward model
 rm_model = AutoModelForSequenceClassification.from_pretrained(
@@ -102,8 +106,8 @@ def rm_score_strs(texts): # Inference for the reward model !
     enc = rm_tok(texts, return_tensors="pt", truncation=True, padding=True, max_length=MAXLEN_RM).to(DEVICE)
     return rm_model(**enc).logits.squeeze(-1).cpu().numpy()
 
-# ---------- 3) PPO (policy has value head) ----------
-ppo_model = AutoModelForCausalLMWithValueHead.from_pretrained(  # <-- VALUE HEAD
+# ---------- 3) PPO (policy) ----------
+ppo_model = AutoModelForCausalLM .from_pretrained(
     "ckpt_sft_qwen05b_vhead", device_map="auto", load_in_4bit=True
 )
 ppo_cfg = PPOConfig(model_name=None, learning_rate=1e-5,

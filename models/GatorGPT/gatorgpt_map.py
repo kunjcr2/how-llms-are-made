@@ -171,9 +171,9 @@ class GQA(nn.Module):
         # Expand K and V from n_kv_heads to n_heads via repeat_interleave on the head axis
 
         ########################################--Uncomment below code--################################
-        expand_factor = self.n_heads // self.n_kv_heads  # compute replication factor
-        k = k.repeat_interleave(expand_factor, dim=1)  # (B, H, T, D)
-        v = v.repeat_interleave(expand_factor, dim=1)  # (B, H, T, D)
+        # expand_factor = self.n_heads // self.n_kv_heads  # compute replication factor
+        # k = k.repeat_interleave(expand_factor, dim=1)  # (B, H, T, D)
+        # v = v.repeat_interleave(expand_factor, dim=1)  # (B, H, T, D)
         ################################################################################################
         # Above thing converts [1,2,3,4] -> [1,1,1,2,2,2,3,3,3,4,4,4] when expand_factor is 3 and dim=0
 
@@ -182,15 +182,12 @@ class GQA(nn.Module):
 
         # Compute SDPA with purely causal masking (no external attention bias, this uses flash attention
         # Removed sdpa_kernel context and enable_gqa=True to allow torch.compile to find a suitable kernel
-        with sdpa_kernel(SDPBackend.FLASH_ATTENTION):
-          out = F.scaled_dot_product_attention(
-              q,
-              k,
-              v,
-              attn_mask=None,
-              is_causal=True,
-              enable_gqa=False
-          )  # (B, H, T, D)
+        try:
+            with sdpa_kernel(SDPBackend.FLASH_ATTENTION):
+                out = F.scaled_dot_product_attention(q, k, v, is_causal=True, enable_gqa=True)
+        except:
+            # Fallback if Flash Attention fails
+            out = F.scaled_dot_product_attention(q, k, v, is_causal=True, enable_gqa=True)       
 
         # Merge heads back to (B, T, H*D)
         out = out.permute(0, 2, 1, 3).contiguous().view(B, T, self.n_heads * self.head_dim)  # (B, T, d_model)
@@ -551,6 +548,9 @@ def train_model_simple(
                 optimizer.zero_grad()
                 loss = calc_loss_batch(input_batch, target_batch, model, device)
                 loss.backward()
+
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
                 optimizer.step()
                 train_losses.append(loss.item())
 
@@ -615,7 +615,7 @@ model = GatorGPT(
     blocks=10
 )
 model = model.to(device) # To cuda, compiling before running
-model = torch.compile(model, fullgraph=True, mode="reduce-overhead")
+model = torch.compile(model, mode="reduce-overhead")
 
 optim = torch.optim.AdamW(model.parameters(), lr=0.01, eps=1e-08, weight_decay=0.01)
 
@@ -630,7 +630,7 @@ train_loader = create_fast_dataloader(
     train_tokens,
     batch_size=32,
     max_length=512,
-    stride=256,
+    stride=512,
     shuffle=True
 )
 
@@ -638,7 +638,7 @@ val_loader = create_fast_dataloader(
     val_tokens,
     batch_size=32,
     max_length=512,
-    stride=256,
+    stride=512,
     shuffle=False
 )
 

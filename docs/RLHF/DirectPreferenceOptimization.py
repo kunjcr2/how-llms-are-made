@@ -1,3 +1,8 @@
+#######################################################
+# THIS CODE HAS MULTIPLE CRITICAL ISSUES. 
+# CHECK BEFORE MOVING AHEAD
+#######################################################
+
 # pip install -U "transformers>=4.44" "trl>=0.12" datasets accelerate peft bitsandbytes
 
 # Apparently this is much better than PPO since we dont have to train a reward model for this !
