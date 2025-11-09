@@ -70,18 +70,18 @@ TRAINING_CONFIG = {
 DATA_CONFIG = {
     "dataset_name": "pubmed",  # or "scientific_papers"
     "train_split": 0.95,
-    "max_train_samples": 200_000,  # Adjust based on time/compute
+    "max_train_samples": 100_000,  # Adjust based on time/compute
     "streaming": False,  # Set True for very large datasets
 }
 
 WANDB_CONFIG = {
     "project": "MedAssist-GPT-Pretraining",
-    "entity": None,  # Your wandb username
+    "entity": kunjcr2,  # Your wandb username
     "name": "medassist-500M-run1",
 }
 
 HF_CONFIG = {
-    "repo_id": "YOUR_USERNAME/MedAssist-GPT-500M",  # Change this!
+    "repo_id": "kunjcr2/MedAssist-GPT-500M",  # Change this!
     "upload_checkpoints": True,
     "upload_frequency": 1000,  # Upload every N steps
 }
@@ -357,8 +357,8 @@ def prepare_medical_data(config: Dict[str, Any], tokenizer):
     print(f"📊 Loaded {len(data)} documents")
     
     # Extract text column (adjust based on dataset)
-    if 'text' in data.columns:
-        texts = data['text'].tolist()
+    if 'article' in data.columns:
+        texts = data['article'].tolist()
     elif 'MedlineCitation' in data.columns:  # For PubMed
         texts = data['MedlineCitation'].apply(
             lambda x: x.get('Article', {}).get('Abstract', {}).get('AbstractText', [''])[0]
@@ -378,6 +378,7 @@ def prepare_medical_data(config: Dict[str, Any], tokenizer):
         chunks = [text_list[i:i+chunk_size] for i in range(0, len(text_list), chunk_size)]
         
         all_tokens = []
+        # Multiple cores used
         with ProcessPoolExecutor(max_workers=min(mp.cpu_count(), 8)) as executor:
             futures = [executor.submit(tokenize_batch, chunk, tokenizer) for chunk in chunks]
             for future in tqdm(futures, desc="Tokenizing"):
@@ -416,7 +417,6 @@ def create_dataloader(
         prefetch_factor=2,
         persistent_workers=True
     )
-
 
 # ============================================================================
 # TRAINING UTILITIES
