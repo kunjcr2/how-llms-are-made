@@ -1322,7 +1322,7 @@ import os, json, torch
 from safetensors.torch import save_file
 from huggingface_hub import create_repo, upload_folder, login
 
-login(token="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")
+login(token="")
 
 REPO_ID = "kunjcr2/MedAssistGPT"
 CKPT = "/content/checkpoints/checkpoint_step_17000.pt"
