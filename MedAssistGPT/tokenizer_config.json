@@ -1,0 +1,4 @@
+{
+  "tokenizer_type": "tiktoken",
+  "tiktoken_model": "p50k_base"
+}
