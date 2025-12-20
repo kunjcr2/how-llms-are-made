@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional
+from typing import Optional, Path
+from torch.utils.data import DataLoader
+from typing import Any, Dict
 
 # --- Tiny Transformer block using built-in MHA ---
 class TinyTransformerEncoderBlock(nn.Module):
@@ -94,3 +96,21 @@ class TinyViT(nn.Module):
         if return_probs:
             return F.softmax(logits, dim=-1) # for inference only
         return logits                         # for training with CrossEntropyLoss
+
+def train(
+    model: nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    optimizer: torch.optim.Optimizer,
+    scheduler: Any,
+    device: torch.device,
+    config: Dict[str, Any],
+    save_dir: Path,
+):
+    pass
+
+def main():
+    pass
+
+if __name__ == '__main__':
+    main()
