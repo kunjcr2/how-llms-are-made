@@ -126,11 +126,57 @@ def bleu(candidate, references, max_n=4, smoothing=True):
     return bp * geo_mean
 
 
+def bleu_ngram_details(candidate, references, max_n=4, smoothing=True):
+    """
+    Compute BLEU score and return individual n-gram precisions.
+    
+    Returns:
+        dict with keys: 'bleu', 'bp', '1-gram', '2-gram', '3-gram', '4-gram'
+    """
+    cand_tokens = candidate.lower().split()
+    ref_tokens = [r.lower().split() for r in references]
+    
+    effective_n = min(max_n, len(cand_tokens))
+    if effective_n == 0:
+        return {'bleu': 0.0, 'bp': 0.0, '1-gram': 0.0, '2-gram': 0.0, '3-gram': 0.0, '4-gram': 0.0}
+    
+    precisions = {}
+    log_prec_sum = 0.0
+    epsilon = 0.1
+    
+    for n in range(1, max_n + 1):
+        if n <= effective_n:
+            p = clipped_precision(cand_tokens, ref_tokens, n)
+            if p == 0 and smoothing:
+                p = epsilon / (len(cand_tokens) - n + 1)
+            precisions[f'{n}-gram'] = p
+            if p > 0:
+                log_prec_sum += math.log(p)
+        else:
+            precisions[f'{n}-gram'] = 0.0
+    
+    geo_mean = math.exp(log_prec_sum / effective_n) if effective_n > 0 else 0.0
+    bp = brevity_penalty(cand_tokens, ref_tokens)
+    
+    return {
+        'bleu': bp * geo_mean,
+        'bp': bp,
+        **precisions
+    }
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("=" * 50)
-    print("BLEU Score Examples")
+    print("BLEU Score Calculator")
     print("=" * 50)
+    
+    print("\nChoose display mode:")
+    print("  [1] Normal BLEU score only")
+    print("  [2] Detailed n-gram breakdown (1-gram, 2-gram, 3-gram, 4-gram)")
+    
+    choice = input("\nEnter choice (1 or 2): ").strip()
+    show_ngrams = (choice == "2")
     
     examples = [
         {
@@ -150,11 +196,25 @@ if __name__ == "__main__":
         },
     ]
     
+    print("\n" + "=" * 50)
+    print("Results")
+    print("=" * 50)
+    
     for ex in examples:
-        score = bleu(ex["candidate"], ex["references"])
         print(f"\n{ex['label']}")
         print(f"  Candidate:  {ex['candidate']}")
         print(f"  Reference:  {ex['references']}")
-        print(f"  BLEU:       {score:.4f}")
+        
+        if show_ngrams:
+            details = bleu_ngram_details(ex["candidate"], ex["references"])
+            print(f"  1-gram:     {details['1-gram']:.4f}")
+            print(f"  2-gram:     {details['2-gram']:.4f}")
+            print(f"  3-gram:     {details['3-gram']:.4f}")
+            print(f"  4-gram:     {details['4-gram']:.4f}")
+            print(f"  BP:         {details['bp']:.4f}")
+            print(f"  BLEU:       {details['bleu']:.4f}")
+        else:
+            score = bleu(ex["candidate"], ex["references"])
+            print(f"  BLEU:       {score:.4f}")
     
     print("\n" + "=" * 50)
