@@ -64,13 +64,13 @@ from tqdm import tqdm
 MODEL_CONFIG = {
     "vocab_size": 50281,
     "d_model": 1024,
-    "n_heads": 32,
-    "gqa_groups": 8,        # 4 KV heads (8 query heads / 2 groups)
+    "n_heads": 16,
+    "gqa_groups": 4,
     "max_len": 1024,
-    "d_ff": 2048,           # 4x hidden dimension
+    "d_ff": 2560,           # 2.5x hidden dimension
     "eps": 1e-5,
     "dropout_p": 0.0,       # No dropout during pretraining
-    "blocks": 24,           # ~500M parameters
+    "blocks": 24,
 }
 
 TRAINING_CONFIG = {
@@ -84,13 +84,13 @@ TRAINING_CONFIG = {
     "beta2": 0.95,
     "eps": 1e-8,
     "warmup_steps": 100, # tc
-    "max_steps": 100_000,
-    "eval_freq": 500, # tc
-    "eval_iter": 100,
+    "max_steps": 200_000,
+    "eval_freq": 1000, # tc
+    "eval_iter": 200,
     "save_freq": 1000,
-    "grad_clip": 1.0,
+    "grad_clip": 2.0,
     "num_workers": 4,
-    "seed": 7979797,
+    "seed": 18181818,
 }
 
 DATA_CONFIG = {
@@ -99,7 +99,7 @@ DATA_CONFIG = {
     "max_length": 1024,  # Sequence length
     "stride": 1024,  # Window stride
     "train_split": 0.95,  # 95% train, 5% val
-    "max_train_samples": 100_000,  # Total documents to use
+    "max_train_samples": 2_000_000,  # Total documents to use
     "chunk_size": 10000,  # Process 10K docs at a time
     "use_clean": False,  # Use your clean() function
 }
@@ -107,13 +107,13 @@ DATA_CONFIG = {
 WANDB_CONFIG = {
     "project": "MedAssist-GPT-Pretraining",
     "entity": "kunjcr2-dreamable",  # Your wandb username
-    "name": "medassist-259M-test",
+    "name": "medassist-303M-test",
 }
 
 HF_CONFIG = {
-    "repo_id": "kunjcr2/MedAssist-GPT-259M",  # Change this!
+    "repo_id": "kunjcr2/MedAssist-GPT-401M",  # Change this!
     "upload_checkpoints": True,
-    "upload_frequency": 10000,  # Upload every N steps
+    "upload_frequency": 20000,  # Upload every N steps
 }
 
 INFERENCE_CONFIG = {
