@@ -16,6 +16,8 @@ language:
 license: apache-2.0
 ---
 
+# ALL THE MODEL WEIGHTS ARE AT [Huggingface](https://huggingface.co/kunjcr2/qwen2.5-0.5b-sft-dpo)
+
 # Qwen2.5-0.5B SFT + DPO (LoRA)
 
 This repository contains:
