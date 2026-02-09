@@ -1,973 +1,918 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reinforcement Learning Mind Map</title>
+    <title>Reinforcement Learning — Knowledge Base</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0f0f2f 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #000;
             min-height: 100vh;
-            color: #e0e0e0;
-            overflow-x: hidden;
+            color: #fff;
+            line-height: 1.6;
         }
 
+        /* Header */
         .header {
-            text-align: center;
-            padding: 50px 20px 30px;
-            background: rgba(255, 255, 255, 0.03);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 80px 40px 60px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            max-width: 1200px;
+            margin: 0 auto;
         }
-
+        .header-label {
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 16px;
+        }
         .header h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 16px;
+        }
+        .header-desc {
+            font-size: 18px;
+            color: rgba(255,255,255,0.6);
+            max-width: 600px;
+            line-height: 1.7;
         }
 
-        .header p {
-            color: #888;
-            font-size: 1rem;
+        /* Search */
+        .search-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px;
         }
-
         .search-box {
-            max-width: 400px;
-            margin: 20px auto 0;
             position: relative;
+            max-width: 400px;
         }
-
         .search-box input {
             width: 100%;
-            padding: 12px 20px;
-            border-radius: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
+            padding: 14px 20px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
             color: #fff;
-            font-size: 1rem;
+            font-size: 14px;
+            font-family: inherit;
             outline: none;
-            transition: all 0.3s;
+            transition: border-color 0.2s;
         }
+        .search-box input:focus { border-color: #fff; }
+        .search-box input::placeholder { color: rgba(255,255,255,0.4); }
 
-        .search-box input:focus {
-            border-color: #60a5fa;
-            box-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
-        }
-
-        .search-box input::placeholder {
-            color: #666;
-        }
-
-        .container {
-            max-width: 1400px;
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 48px;
+            padding: 0 40px 40px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-item { text-align: left; }
+        .stat-value { font-size: 32px; font-weight: 600; }
+        .stat-label { font-size: 12px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 40px;
         }
 
-        .mindmap {
+        /* Sections */
+        .section {
+            margin-bottom: 80px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 60px;
+        }
+        .section:last-child { border-bottom: none; }
+
+        .section-header {
             display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-
-        .branch {
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-
-        .branch:hover {
-            border-color: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
-        }
-
-        .branch-header {
-            padding: 20px 25px;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            /* transition: background 0.3s; */
         }
-
-        .branch-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            flex-shrink: 0;
+        .section-number {
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            font-weight: 500;
+            margin-bottom: 8px;
         }
-
-        .branch-title {
-            flex: 1;
+        .section-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
         }
-
-        .branch-title h2 {
-            font-size: 1.4rem;
-            margin-bottom: 5px;
+        .section-subtitle {
+            font-size: 15px;
+            color: rgba(255,255,255,0.5);
+            max-width: 500px;
         }
-
-        .branch-title p {
-            font-size: 0.9rem;
-            color: #888;
+        .section-meta {
+            text-align: right;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
         }
-
-        .expand-icon {
-            font-size: 1.5rem;
-            color: #666;
-            transition: transform 0.3s;
+        .expand-btn {
+            font-size: 24px;
+            color: rgba(255,255,255,0.3);
+            transition: transform 0.2s;
         }
+        .section.expanded .expand-btn { transform: rotate(180deg); }
 
-        .branch.expanded .expand-icon {
-            transform: rotate(180deg);
-        }
-
-        .branch-content {
+        .section-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.5s ease-out;
+            transition: max-height 0.4s ease-out;
         }
+        .section.expanded .section-content { max-height: 5000px; }
 
-        .branch.expanded .branch-content {
-            max-height: 3000px;
-        }
-
-        .concepts {
-            padding: 0 25px 25px;
+        /* Cards Grid */
+        .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
         }
 
-        .concept {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        /* Card */
+        .card {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 32px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: border-color 0.2s;
         }
+        .card:hover { border-color: rgba(255,255,255,0.3); }
 
-        .concept:hover {
-            background: rgba(255, 255, 255, 0.06);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .concept h3 {
-            font-size: 1.1rem;
-            margin-bottom: 10px;
+        .card-header {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        .card-tag {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 4px 8px;
+        }
+        .card-desc {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .card-insight {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-style: italic;
         }
 
-        .concept h3 span {
-            font-size: 1.2rem;
-        }
-
-        .concept p {
-            font-size: 0.9rem;
-            color: #aaa;
-            line-height: 1.5;
-        }
-
-        .concept-details {
+        /* Card Details */
+        .card-details {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s;
+            transition: max-height 0.3s ease-out;
+        }
+        .card.expanded .card-details {
+            max-height: 800px;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
 
-        .concept.expanded .concept-details {
-            max-height: 1000px;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        .detail-list { list-style: none; }
+        .detail-list li {
+            padding: 10px 0;
+            font-size: 14px;
+            color: rgba(255,255,255,0.7);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            gap: 12px;
         }
-
-        .concept-details ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .concept-details li {
-            padding: 8px 0;
-            padding-left: 20px;
-            position: relative;
-            color: #bbb;
-            font-size: 0.85rem;
-            line-height: 1.5;
-        }
-
-        .concept-details li::before {
+        .detail-list li:last-child { border-bottom: none; }
+        .detail-list li::before {
             content: '→';
-            position: absolute;
-            left: 0;
-            color: #666;
+            color: rgba(255,255,255,0.3);
         }
+        .detail-list strong { color: #fff; }
 
+        /* Formula */
         .formula {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 12px 15px;
-            border-radius: 8px;
-            font-family: 'Consolas', monospace;
-            font-size: 0.9rem;
-            margin: 10px 0;
-            color: #a5d6ff;
-            overflow-x: auto;
+            background: rgba(255,255,255,0.03);
+            border-left: 2px solid rgba(255,255,255,0.2);
+            padding: 16px 20px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 14px;
+            margin: 16px 0;
+            color: rgba(255,255,255,0.9);
         }
 
-        /* Color themes */
-        .theme-blue .branch-icon {
-            background: linear-gradient(135deg, #1e40af, #3b82f6);
+        /* Context Block */
+        .context-block {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 20px 24px;
+            margin-top: 16px;
+        }
+        .context-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 8px;
+        }
+        .context-text {
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+            line-height: 1.7;
         }
 
-        .theme-blue .concept h3 {
-            color: #60a5fa;
-        }
-
-        .theme-green .branch-icon {
-            background: linear-gradient(135deg, #065f46, #10b981);
-        }
-
-        .theme-green .concept h3 {
-            color: #34d399;
-        }
-
-        .theme-purple .branch-icon {
-            background: linear-gradient(135deg, #5b21b6, #8b5cf6);
-        }
-
-        .theme-purple .concept h3 {
-            color: #a78bfa;
-        }
-
-        .theme-orange .branch-icon {
-            background: linear-gradient(135deg, #c2410c, #f97316);
-        }
-
-        .theme-orange .concept h3 {
-            color: #fb923c;
-        }
-
-        .theme-pink .branch-icon {
-            background: linear-gradient(135deg, #be185d, #ec4899);
-        }
-
-        .theme-pink .concept h3 {
-            color: #f472b6;
-        }
-
-        .theme-cyan .branch-icon {
-            background: linear-gradient(135deg, #0e7490, #06b6d4);
-        }
-
-        .theme-cyan .concept h3 {
-            color: #22d3ee;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .legend {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-            color: #888;
-        }
-
-        .legend-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
+        .hidden { display: none !important; }
 
         @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8rem;
-            }
-
-            .concepts {
-                grid-template-columns: 1fr;
-            }
+            .header { padding: 40px 20px; }
+            .header h1 { font-size: 32px; }
+            .cards-grid { grid-template-columns: 1fr; }
+            .stats-bar { flex-wrap: wrap; gap: 24px; }
         }
     </style>
 </head>
-
 <body>
-    <div class="header">
-        <h1>🧠 Reinforcement Learning</h1>
-        <p>Interactive Mind Map - Click any section to explore concepts</p>
+    <header class="header">
+        <div class="header-label">Research Documentation</div>
+        <h1>Reinforcement Learning</h1>
+        <p class="header-desc">A comprehensive knowledge base covering fundamental theory, algorithmic implementations, and applications to modern LLM alignment.</p>
+    </header>
+
+    <div class="stats-bar">
+        <div class="stat-item"><div class="stat-value">6</div><div class="stat-label">Core Sections</div></div>
+        <div class="stat-item"><div class="stat-value">35+</div><div class="stat-label">Concepts</div></div>
+        <div class="stat-item"><div class="stat-value">15</div><div class="stat-label">Key Algorithms</div></div>
+    </div>
+
+    <div class="search-container">
         <div class="search-box">
-            <input type="text" id="search" placeholder="Search concepts..." oninput="filterConcepts(this.value)">
-        </div>
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-dot" style="background:#3b82f6"></div>Fundamentals
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot" style="background:#10b981"></div>Value Functions
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot" style="background:#8b5cf6"></div>Model-Based
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot" style="background:#f97316"></div>Model-Free
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot" style="background:#06b6d4"></div>Function Approx
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot" style="background:#ec4899"></div>Policy Gradient
-            </div>
+            <input type="text" id="search" placeholder="Search concepts, algorithms, methods..." oninput="filterConcepts(this.value)">
         </div>
     </div>
 
     <div class="container">
-        <div class="mindmap">
-            <!-- FUNDAMENTALS -->
-            <div class="branch theme-blue expanded" data-branch="fundamentals">
-                <div class="branch-header" onclick="toggleBranch(this.parentElement)">
-                    <div class="branch-icon">📚</div>
-                    <div class="branch-title">
-                        <h2>RL Fundamentals</h2>
-                        <p>Core concepts: Agent, Environment, Policy, Reward, Value</p>
-                    </div>
-                    <div class="expand-icon">▼</div>
+        <!-- SECTION 1: FUNDAMENTALS -->
+        <div class="section expanded" data-branch="fundamentals">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <div>
+                    <div class="section-number">01</div>
+                    <h2 class="section-title">RL Fundamentals</h2>
+                    <p class="section-subtitle">Core concepts forming the foundation: Agent-Environment interaction, MDPs, returns, and the exploration-exploitation tradeoff.</p>
                 </div>
-                <div class="branch-content">
-                    <div class="concepts">
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🎯</span> Agent-Environment Interface</h3>
-                            <p>The fundamental interaction loop in RL</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li>Agent observes state from environment</li>
-                                    <li>Agent selects action based on policy</li>
-                                    <li>Environment returns reward and next state</li>
-                                    <li>Goal: Maximize cumulative rewards over time</li>
-                                </ul>
+                <div class="section-meta">
+                    5 concepts<br>
+                    <span class="expand-btn">▼</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="cards-grid">
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header">
+                            <h3 class="card-title">Agent-Environment Interface</h3>
+                            <span class="card-tag">Core</span>
+                        </div>
+                        <p class="card-desc">The fundamental interaction loop defining how an agent perceives, acts, and learns within its environment.</p>
+                        <p class="card-insight">This is the central abstraction of RL — everything builds on this loop.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Agent observes state sₜ from environment</li>
+                                <li>Agent selects action aₜ based on policy π(a|s)</li>
+                                <li>Environment returns reward rₜ₊₁ and next state sₜ₊₁</li>
+                                <li><strong>Objective:</strong> Maximize cumulative expected rewards over time</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">Why This Matters</div>
+                                <p class="context-text">Unlike supervised learning with fixed datasets, RL agents must balance gathering information (exploration) with leveraging known good actions (exploitation). The sequential nature creates credit assignment challenges — which past action caused this reward?</p>
                             </div>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📋</span> Four Elements of RL</h3>
-                            <p>Policy, Reward, Value Function, Model</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li><strong>Policy (π):</strong> Maps states to actions - the agent's behavior</li>
-                                    <li><strong>Reward Signal:</strong> Immediate feedback, single number at each step
-                                    </li>
-                                    <li><strong>Value Function:</strong> Long-term expected cumulative reward</li>
-                                    <li><strong>Model:</strong> Agent's representation of environment dynamics</li>
-                                </ul>
+                    </div>
+
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header">
+                            <h3 class="card-title">Four Elements of RL</h3>
+                            <span class="card-tag">Core</span>
+                        </div>
+                        <p class="card-desc">Policy, Reward Signal, Value Function, and Model — the building blocks of every RL system.</p>
+                        <p class="card-insight">Understanding these distinctions clarifies why different algorithms exist.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Policy (π):</strong> Maps states to actions — defines agent behavior</li>
+                                <li><strong>Reward Signal:</strong> Immediate scalar feedback each timestep</li>
+                                <li><strong>Value Function:</strong> Expected long-term cumulative reward from a state</li>
+                                <li><strong>Model:</strong> Agent's internal representation of environment dynamics</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">Design Implications</div>
+                                <p class="context-text">Model-free methods (Q-learning, Policy Gradient) learn without a model. Model-based methods can plan ahead but require accurate dynamics predictions. Value-based methods derive policies from Q/V, while policy gradient methods optimize π directly.</p>
                             </div>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>⚖️</span> Exploration vs Exploitation</h3>
-                            <p>The fundamental tradeoff in RL</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li><strong>Exploitation:</strong> Choose action with highest known value</li>
-                                    <li><strong>Exploration:</strong> Try suboptimal actions to discover better ones
-                                    </li>
-                                    <li>Pure exploitation may miss optimal solutions</li>
-                                    <li>Pure exploration wastes time on known bad actions</li>
-                                </ul>
+                    </div>
+
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header">
+                            <h3 class="card-title">Exploration vs Exploitation</h3>
+                            <span class="card-tag">Tradeoff</span>
+                        </div>
+                        <p class="card-desc">The fundamental dilemma: exploit known good actions or explore potentially better alternatives?</p>
+                        <p class="card-insight">No algorithm completely solves this — only manages the tradeoff.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Exploitation:</strong> Select action with highest known value</li>
+                                <li><strong>Exploration:</strong> Try suboptimal actions to discover better ones</li>
+                                <li>Pure exploitation risks missing optimal solutions forever</li>
+                                <li>Pure exploration wastes time on known bad actions</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">Common Strategies</div>
+                                <p class="context-text">ε-greedy (random exploration), UCB (optimistic estimates), Thompson Sampling (probability matching), entropy bonuses in policy gradients. The right strategy depends on environment stochasticity and horizon length.</p>
                             </div>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🔗</span> Markov Decision Process</h3>
-                            <p>Mathematical framework for sequential decisions</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li><strong>Markov Property:</strong> Future depends only on current state, not
-                                        history</li>
-                                    <li><strong>Episodic Tasks:</strong> Have terminal states (games, puzzles)</li>
-                                    <li><strong>Continuing Tasks:</strong> Run indefinitely (robotics, trading)</li>
-                                    <li>Chess: current board position is sufficient (Markov)</li>
-                                    <li>Conversation: context history needed (not Markov)</li>
-                                </ul>
+                    </div>
+
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header">
+                            <h3 class="card-title">Markov Decision Process</h3>
+                            <span class="card-tag">Framework</span>
+                        </div>
+                        <p class="card-desc">The formal mathematical framework for sequential decision-making under uncertainty.</p>
+                        <p class="card-insight">MDPs formalize when history doesn't matter — only current state.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Markov Property:</strong> P(sₜ₊₁|sₜ,aₜ) = P(sₜ₊₁|s₀,...,sₜ,a₀,...,aₜ)</li>
+                                <li><strong>Episodic Tasks:</strong> Terminate at goal states (games, puzzles)</li>
+                                <li><strong>Continuing Tasks:</strong> Run indefinitely (robotics, trading)</li>
+                                <li>Chess position is Markov; conversation context is not</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">Practical Implications</div>
+                                <p class="context-text">When true state isn't fully observable (POMDP), solutions include state estimation, recurrent policies, or frame stacking. LLM token generation treats prompt + generated tokens as state — approximately Markov with sufficient context.</p>
                             </div>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>💰</span> Returns & Discounting</h3>
-                            <p>How future rewards are valued</p>
-                            <div class="concept-details">
-                                <div class="formula">Gₜ = Rₜ₊₁ + γRₜ₊₂ + γ²Rₜ₊₃ + ...</div>
-                                <ul>
-                                    <li><strong>Return (Gₜ):</strong> Sum of all future rewards from time t</li>
-                                    <li><strong>Discount factor (γ):</strong> Between 0 and 1</li>
-                                    <li>γ close to 0: Agent is "myopic" (short-sighted)</li>
-                                    <li>γ close to 1: Agent values future rewards highly</li>
-                                </ul>
+                    </div>
+
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header">
+                            <h3 class="card-title">Returns & Discounting</h3>
+                            <span class="card-tag">Theory</span>
+                        </div>
+                        <p class="card-desc">How future rewards are weighted and accumulated into a single objective.</p>
+                        <div class="formula">Gₜ = Rₜ₊₁ + γRₜ₊₂ + γ²Rₜ₊₃ + ... = Σₖ γᵏRₜ₊ₖ₊₁</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Return (Gₜ):</strong> Total discounted future reward from time t</li>
+                                <li><strong>Discount factor (γ):</strong> ∈ [0, 1], typically 0.99</li>
+                                <li>γ → 0: Myopic agent, only immediate rewards</li>
+                                <li>γ → 1: Far-sighted agent, values distant rewards equally</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">Why Discount?</div>
+                                <p class="context-text">Mathematical convenience (bounded sums), uncertainty about future, preference for sooner rewards, and preventing infinite returns in continuing tasks. In practice, γ encodes planning horizon.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- VALUE FUNCTIONS -->
-            <div class="branch theme-green" data-branch="value">
-                <div class="branch-header" onclick="toggleBranch(this.parentElement)">
-                    <div class="branch-icon">📊</div>
-                    <div class="branch-title">
-                        <h2>Value Functions</h2>
-                        <p>Measuring long-term goodness of states and actions</p>
-                    </div>
-                    <div class="expand-icon">▼</div>
+        <!-- SECTION 2: VALUE FUNCTIONS -->
+        <div class="section" data-branch="value">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <div>
+                    <div class="section-number">02</div>
+                    <h2 class="section-title">Value Functions</h2>
+                    <p class="section-subtitle">Quantifying long-term goodness of states and actions — the foundation of value-based RL.</p>
                 </div>
-                <div class="branch-content">
-                    <div class="concepts">
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📈</span> State Value V(s)</h3>
-                            <p>Expected return starting from state s</p>
-                            <div class="concept-details">
-                                <div class="formula">V_π(s) = E_π[Gₜ | Sₜ = s]</div>
-                                <ul>
-                                    <li>How good is it to be in this state?</li>
-                                    <li>Depends on the policy being followed</li>
-                                    <li>Estimated by averaging returns over many episodes</li>
-                                </ul>
+                <div class="section-meta">4 concepts<br><span class="expand-btn">▼</span></div>
+            </div>
+            <div class="section-content">
+                <div class="cards-grid">
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">State Value V(s)</h3><span class="card-tag">Function</span></div>
+                        <p class="card-desc">Expected return starting from state s and following policy π thereafter.</p>
+                        <div class="formula">V_π(s) = E_π[Gₜ | Sₜ = s]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Answers: "How good is it to be in this state?"</li>
+                                <li>Depends on which policy is being followed</li>
+                                <li>Estimated by averaging returns over many episodes (MC) or bootstrapping (TD)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Action Value Q(s,a)</h3><span class="card-tag">Function</span></div>
+                        <p class="card-desc">Expected return for taking action a in state s, then following π.</p>
+                        <div class="formula">Q_π(s,a) = E_π[Gₜ | Sₜ = s, Aₜ = a]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Answers: "How good is taking this action here?"</li>
+                                <li><strong>Key for control:</strong> Pick action with max Q(s,a)</li>
+                                <li>Q-table: stores values for all (state, action) pairs</li>
+                                <li>For greedy policy: Q(s,a*) = V(s)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Bellman Equation</h3><span class="card-tag">Theory</span></div>
+                        <p class="card-desc">The recursive relationship that decomposes value into immediate + future components.</p>
+                        <div class="formula">V(s) = E[R + γV(s') | s]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Value = immediate reward + discounted future value</li>
+                                <li>Foundation of DP, TD, and most RL algorithms</li>
+                                <li><strong>Optimality:</strong> V*(s) = maxₐ E[R + γV*(s')]</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">Computational Insight</div>
+                                <p class="context-text">Bellman equations turn the RL problem into a system of equations. DP solves them exactly (if model known), TD solves them by sampling, and neural networks approximate them for large state spaces.</p>
                             </div>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🎲</span> Action Value Q(s,a)</h3>
-                            <p>Expected return for taking action a in state s</p>
-                            <div class="concept-details">
-                                <div class="formula">Q_π(s,a) = E_π[Gₜ | Sₜ = s, Aₜ = a]</div>
-                                <ul>
-                                    <li>How good is taking this action in this state?</li>
-                                    <li>Useful for control: pick action with max Q</li>
-                                    <li>Q-table stores values for all (state, action) pairs</li>
-                                    <li>If policy is greedy on Q, then Q(s,a*) = V(s)</li>
-                                </ul>
-                            </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Epsilon-Greedy Policy</h3><span class="card-tag">Strategy</span></div>
+                        <p class="card-desc">Simple exploration strategy balancing random and greedy actions.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>With probability (1-ε): take best known action (exploit)</li>
+                                <li>With probability ε: take random action (explore)</li>
+                                <li>Typical schedule: ε = 1.0 → 0.01 over training</li>
+                                <li>Ensures all actions tried, converges to optimal</li>
+                            </ul>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🔄</span> Bellman Equation</h3>
-                            <p>Recursive relationship between values</p>
-                            <div class="concept-details">
-                                <div class="formula">V(s) = R + γ·V(s')</div>
-                                <ul>
-                                    <li>Value = immediate reward + discounted future value</li>
-                                    <li>Foundation of DP, TD, and many RL algorithms</li>
-                                    <li><strong>Bellman Optimality:</strong> V*(s) = max_a [R + γV*(s')]</li>
-                                </ul>
-                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: DYNAMIC PROGRAMMING -->
+        <div class="section" data-branch="dp">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <div>
+                    <div class="section-number">03</div>
+                    <h2 class="section-title">Dynamic Programming</h2>
+                    <p class="section-subtitle">Model-based planning methods requiring known transition dynamics — theoretically optimal but often impractical.</p>
+                </div>
+                <div class="section-meta">5 concepts<br><span class="expand-btn">▼</span></div>
+            </div>
+            <div class="section-content">
+                <div class="cards-grid">
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Policy Evaluation</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">Computing V_π for a given fixed policy — the "prediction problem".</p>
+                        <div class="formula">V(s) ← Σₐ π(a|s) Σₛ',ᵣ P(s',r|s,a)[r + γV(s')]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Initialize V(s) = 0 for all states</li>
+                                <li>Iterate Bellman updates until convergence</li>
+                                <li>Requires known model P(s',r|s,a)</li>
+                            </ul>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🎰</span> Epsilon-Greedy Policy</h3>
-                            <p>Balancing exploration and exploitation</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li>With probability (1-ε): take best action (exploit)</li>
-                                    <li>With probability ε: take random action (explore)</li>
-                                    <li>Typical: start ε=1.0, decay to ε=0.01</li>
-                                    <li>Ensures all actions are tried, converges to optimal</li>
-                                </ul>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Policy Improvement</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">Making policy better given current value estimates.</p>
+                        <div class="formula">π'(s) = argmaxₐ Σₛ',ᵣ P(s',r|s,a)[r + γV(s')]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>For each state, find action maximizing expected return</li>
+                                <li>Guaranteed to improve or maintain policy quality</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Policy Iteration</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">Alternating evaluation and improvement until convergence.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>1. Start with arbitrary policy π₀</li>
+                                <li>2. Evaluate: compute V_π</li>
+                                <li>3. Improve: update π using V_π</li>
+                                <li>4. Repeat until policy stabilizes → π*</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Value Iteration</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">Combined evaluation + improvement in one update step.</p>
+                        <div class="formula">V(s) ← maxₐ Σₛ',ᵣ P(s',r|s,a)[r + γV(s')]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Uses Bellman Optimality Equation directly</li>
+                                <li>More efficient than policy iteration</li>
+                                <li>Converges to optimal V*</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">DP Limitations</h3><span class="card-tag">Critical</span></div>
+                        <p class="card-desc">Why practical RL requires learning methods instead of pure planning.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Requires complete model P(s',r|s,a)</li>
+                                <li>Full state sweeps are O(|S|²|A|)</li>
+                                <li>Impractical for large/continuous state spaces</li>
+                                <li>Not learning from experience</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">Motivation for Model-Free RL</div>
+                                <p class="context-text">DP shows *what* the optimal solution looks like but not *how* to find it practically. MC and TD methods learn from samples without requiring the model.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- DYNAMIC PROGRAMMING -->
-            <div class="branch theme-purple" data-branch="dp">
-                <div class="branch-header" onclick="toggleBranch(this.parentElement)">
-                    <div class="branch-icon">🧮</div>
-                    <div class="branch-title">
-                        <h2>Dynamic Programming</h2>
-                        <p>Model-based methods with known transition probabilities</p>
-                    </div>
-                    <div class="expand-icon">▼</div>
+        <!-- SECTION 4: MODEL-FREE METHODS -->
+        <div class="section" data-branch="modelfree">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <div>
+                    <div class="section-number">04</div>
+                    <h2 class="section-title">Model-Free Methods</h2>
+                    <p class="section-subtitle">Learning from experience without knowing environment dynamics — Monte Carlo and Temporal Difference approaches.</p>
                 </div>
-                <div class="branch-content">
-                    <div class="concepts">
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📐</span> Policy Evaluation</h3>
-                            <p>Computing V_π for a given policy</p>
-                            <div class="concept-details">
-                                <div class="formula">V(s) ← Σ_a π(a|s) Σ_{s',r} P(s',r|s,a)[r + γV(s')]</div>
-                                <ul>
-                                    <li>Initialize V(s) = 0 for all states</li>
-                                    <li>Iteratively update using Bellman equation</li>
-                                    <li>Repeat until values converge</li>
-                                    <li>Also called the "Prediction Problem"</li>
-                                </ul>
+                <div class="section-meta">5 concepts<br><span class="expand-btn">▼</span></div>
+            </div>
+            <div class="section-content">
+                <div class="cards-grid">
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Monte Carlo Methods</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">Learn value by averaging complete episode returns — no bootstrapping.</p>
+                        <div class="formula">V(s) ← V(s) + α[Gₜ - V(s)]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>No model required — pure experience-based learning</li>
+                                <li>Must wait for episode end to get Gₜ</li>
+                                <li>Unbiased but high variance</li>
+                                <li>Only works for episodic tasks</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Temporal Difference (TD)</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">Learn after every step using bootstrapped estimates — the core of modern RL.</p>
+                        <div class="formula">V(s) ← V(s) + α[R + γV(s') - V(s)]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>TD Target:</strong> R + γV(s')</li>
+                                <li><strong>TD Error:</strong> δ = R + γV(s') - V(s)</li>
+                                <li>Bootstrapping: estimates update estimates</li>
+                                <li>Can learn before episode ends, works for continuing tasks</li>
+                                <li>Lower variance than MC, some bias</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">SARSA (On-Policy)</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">TD control learning Q(S,A,R,S',A') — learns policy being followed.</p>
+                        <div class="formula">Q(S,A) ← Q(S,A) + α[R + γQ(S',A') - Q(S,A)]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>On-policy: learns about the ε-greedy policy it follows</li>
+                                <li>Uses actual next action A' from current policy</li>
+                                <li>Learns safer paths that account for exploration mistakes</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Q-Learning (Off-Policy)</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">TD control using max Q — learns optimal policy while exploring.</p>
+                        <div class="formula">Q(S,A) ← Q(S,A) + α[R + γ maxₐ Q(S',a) - Q(S,A)]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Off-policy: learns optimal Q* regardless of behavior policy</li>
+                                <li>Uses max over next actions (greedy target)</li>
+                                <li>Finds optimal but potentially riskier paths</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">SARSA vs Q-Learning</div>
+                                <p class="context-text">Classic example: cliff walking. SARSA learns safe route away from cliff (accounting for random exploration steps). Q-Learning learns shortest path along cliff edge (optimal if perfect execution).</p>
                             </div>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>⬆️</span> Policy Improvement</h3>
-                            <p>Making the policy better given V_π</p>
-                            <div class="concept-details">
-                                <div class="formula">π'(s) = argmax_a Σ_{s',r} P(s',r|s,a)[r + γV(s')]</div>
-                                <ul>
-                                    <li>For each state, find action that maximizes expected return</li>
-                                    <li>If any action beats current policy's action, update</li>
-                                    <li>Guaranteed to improve or maintain policy quality</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🔁</span> Policy Iteration</h3>
-                            <p>Alternating evaluation and improvement</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li>1. Start with arbitrary policy π₀</li>
-                                    <li>2. Evaluate: compute V_π</li>
-                                    <li>3. Improve: update π using V_π</li>
-                                    <li>4. Repeat until policy stabilizes → optimal π*</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>⚡</span> Value Iteration</h3>
-                            <p>Combined evaluation + improvement in one step</p>
-                            <div class="concept-details">
-                                <div class="formula">V(s) ← max_a Σ_{s',r} P(s',r|s,a)[r + γV(s')]</div>
-                                <ul>
-                                    <li>Uses Bellman Optimality Equation directly</li>
-                                    <li>More efficient than policy iteration</li>
-                                    <li>Converges to optimal value function V*</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>⚠️</span> DP Limitations</h3>
-                            <p>Why we need learning methods</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li>Requires complete model P(s',r|s,a)</li>
-                                    <li>Full state sweeps are expensive</li>
-                                    <li>Impractical for large state spaces</li>
-                                    <li>Not learning from experience</li>
-                                </ul>
-                            </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">On-Policy vs Off-Policy</h3><span class="card-tag">Theory</span></div>
+                        <p class="card-desc">Whose data generates learning — fundamental design choice.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>On-Policy:</strong> Learn about policy generating the data (SARSA)</li>
+                                <li><strong>Off-Policy:</strong> Learn different policy from data (Q-Learning)</li>
+                                <li>Off-policy enables learning from demonstrations, replay</li>
+                                <li>Importance sampling corrects distribution mismatch</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- MODEL-FREE METHODS -->
-            <div class="branch theme-orange" data-branch="modelfree">
-                <div class="branch-header" onclick="toggleBranch(this.parentElement)">
-                    <div class="branch-icon">🎓</div>
-                    <div class="branch-title">
-                        <h2>Model-Free Methods</h2>
-                        <p>Monte Carlo & Temporal Difference - Learning from experience</p>
-                    </div>
-                    <div class="expand-icon">▼</div>
+        <!-- SECTION 5: FUNCTION APPROXIMATION -->
+        <div class="section" data-branch="approx">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <div>
+                    <div class="section-number">05</div>
+                    <h2 class="section-title">Function Approximation & Deep RL</h2>
+                    <p class="section-subtitle">Scaling to large state spaces with parameterized functions and neural networks.</p>
                 </div>
-                <div class="branch-content">
-                    <div class="concepts">
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🎲</span> Monte Carlo Methods</h3>
-                            <p>Learn from complete episodes</p>
-                            <div class="concept-details">
-                                <div class="formula">V(s) ← V(s) + α[Gₜ - V(s)]</div>
-                                <ul>
-                                    <li>No model required - learn from experience</li>
-                                    <li>Must wait for episode to end for Gₜ</li>
-                                    <li>Average actual returns to estimate value</li>
-                                    <li>Unbiased but high variance</li>
-                                    <li>Only works for episodic tasks</li>
-                                </ul>
-                            </div>
+                <div class="section-meta">6 concepts<br><span class="expand-btn">▼</span></div>
+            </div>
+            <div class="section-content">
+                <div class="cards-grid">
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Linear Methods</h3><span class="card-tag">Foundation</span></div>
+                        <p class="card-desc">Simple parameterized value functions with convergence guarantees.</p>
+                        <div class="formula">V̂(s,w) = wᵀx(s) = Σᵢ wᵢxᵢ(s)</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Feature vector x(s) for each state</li>
+                                <li>Learn weight vector w</li>
+                                <li>Gradient: ∇V̂ = x(s) — simple and fast</li>
+                            </ul>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>⏱️</span> Temporal Difference (TD)</h3>
-                            <p>Learn after every step using bootstrapping</p>
-                            <div class="concept-details">
-                                <div class="formula">V(s) ← V(s) + α[R + γV(s') - V(s)]</div>
-                                <ul>
-                                    <li><strong>TD Target:</strong> R + γV(s')</li>
-                                    <li><strong>TD Error:</strong> R + γV(s') - V(s)</li>
-                                    <li>Bootstrapping: use estimates to update estimates</li>
-                                    <li>Can update before episode ends</li>
-                                    <li>Works for continuing tasks</li>
-                                    <li>Lower variance than MC, some bias</li>
-                                </ul>
-                            </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Neural Network Approximation</h3><span class="card-tag">Deep RL</span></div>
+                        <p class="card-desc">Nonlinear function approximation enabling end-to-end learning from pixels.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Input: state (or raw pixels)</li>
+                                <li>Output: V(s) or Q(s,a) for all actions</li>
+                                <li>Backpropagation computes gradients</li>
+                                <li>Universal approximation capability</li>
+                                <li>Used in AlphaGo, RLHF, modern LLMs</li>
+                            </ul>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🔴</span> SARSA (On-Policy)</h3>
-                            <p>TD Control using Q(S,A,R,S',A')</p>
-                            <div class="concept-details">
-                                <div class="formula">Q(S,A) ← Q(S,A) + α[R + γQ(S',A') - Q(S,A)]</div>
-                                <ul>
-                                    <li>On-policy: learns about ε-greedy policy it follows</li>
-                                    <li>Uses actual next action A' from policy</li>
-                                    <li>Safer paths: accounts for exploration mistakes</li>
-                                    <li>Cliff walking: takes longer but safer route</li>
-                                </ul>
-                            </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Deep Q-Network (DQN)</h3><span class="card-tag">Breakthrough</span></div>
+                        <p class="card-desc">DeepMind's 2015 breakthrough — superhuman Atari from raw pixels.</p>
+                        <div class="formula">Loss = (r + γ maxₐ' Q_target(s',a') - Q(s,a))²</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>CNN processes stacked frames (4×84×84)</li>
+                                <li>Outputs Q-value for each possible action</li>
+                                <li>Human-level performance on 49 Atari games</li>
+                            </ul>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🟢</span> Q-Learning (Off-Policy)</h3>
-                            <p>TD Control using max Q value</p>
-                            <div class="concept-details">
-                                <div class="formula">Q(S,A) ← Q(S,A) + α[R + γ max_a Q(S',a) - Q(S,A)]</div>
-                                <ul>
-                                    <li>Off-policy: learns optimal policy while exploring</li>
-                                    <li>Uses max over next actions (greedy target)</li>
-                                    <li>Optimal but riskier paths</li>
-                                    <li>Cliff walking: shortest path along cliff edge</li>
-                                </ul>
-                            </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Experience Replay</h3><span class="card-tag">Technique</span></div>
+                        <p class="card-desc">Breaking temporal correlation by sampling from stored transitions.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Store transitions (s, a, r, s') in replay buffer</li>
+                                <li>Sample random minibatches for training</li>
+                                <li>Breaks temporal correlation in data</li>
+                                <li>Each experience used multiple times</li>
+                                <li>Essential for stable DQN training</li>
+                            </ul>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📊</span> On vs Off Policy</h3>
-                            <p>Who generates the data?</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li><strong>On-Policy:</strong> Learn about policy generating data (SARSA)</li>
-                                    <li><strong>Off-Policy:</strong> Learn different policy from data (Q-Learning)</li>
-                                    <li>Off-policy enables learning from demonstrations</li>
-                                    <li>Importance sampling corrects probability mismatch</li>
-                                </ul>
-                            </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Target Network</h3><span class="card-tag">Technique</span></div>
+                        <p class="card-desc">Stabilizing training by fixing the bootstrap target.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Frozen copy of Q-network for computing targets</li>
+                                <li>Updated every N steps (e.g., 10,000)</li>
+                                <li>Prevents chasing a moving target</li>
+                                <li>Critical for DQN stability</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Frame Stacking</h3><span class="card-tag">Technique</span></div>
+                        <p class="card-desc">Capturing motion information from static observations.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Single frame: no velocity information</li>
+                                <li>Stack last 4 frames as input</li>
+                                <li>Agent can infer ball direction/speed</li>
+                                <li>State becomes 4×84×84 grayscale tensor</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- FUNCTION APPROXIMATION -->
-            <div class="branch theme-cyan" data-branch="approx">
-                <div class="branch-header" onclick="toggleBranch(this.parentElement)">
-                    <div class="branch-icon">🧠</div>
-                    <div class="branch-title">
-                        <h2>Function Approximation & Deep RL</h2>
-                        <p>Scaling to large state spaces with neural networks</p>
-                    </div>
-                    <div class="expand-icon">▼</div>
+        <!-- SECTION 6: POLICY GRADIENT -->
+        <div class="section" data-branch="pg">
+            <div class="section-header" onclick="toggleSection(this.parentElement)">
+                <div>
+                    <div class="section-number">06</div>
+                    <h2 class="section-title">Policy Gradient Methods</h2>
+                    <p class="section-subtitle">Direct policy optimization — foundation of modern RL for LLM alignment (PPO, RLHF, GRPO, DPO).</p>
                 </div>
-                <div class="branch-content">
-                    <div class="concepts">
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📈</span> Linear Methods</h3>
-                            <p>Simple parameterized value functions</p>
-                            <div class="concept-details">
-                                <div class="formula">V̂(s,w) = w^T x(s) = Σ wᵢ xᵢ(s)</div>
-                                <ul>
-                                    <li>Feature vector x(s) for each state</li>
-                                    <li>Learn weight vector w</li>
-                                    <li>Gradient: ∇V̂ = x(s) (simple!)</li>
-                                    <li>Fast, convergence guarantees</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🔮</span> Neural Network Approximation</h3>
-                            <p>Deep RL with nonlinear functions</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li>Input: state (or raw pixels)</li>
-                                    <li>Output: V(s) or Q(s,a) for all actions</li>
-                                    <li>Backpropagation computes gradients</li>
-                                    <li>Can approximate arbitrarily complex functions</li>
-                                    <li>Used in AlphaGo, RLHF, modern LLMs</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🎮</span> Deep Q-Network (DQN)</h3>
-                            <p>Breakthrough: Playing Atari from pixels</p>
-                            <div class="concept-details">
-                                <div class="formula">Loss = (r + γ max Q_{target}(s',a') - Q(s,a))²</div>
-                                <ul>
-                                    <li>CNN processes stacked frames (4x84x84)</li>
-                                    <li>Outputs Q-value for each action</li>
-                                    <li>DeepMind beat human experts on Atari games</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🔄</span> Experience Replay</h3>
-                            <p>Breaking correlation in training data</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li>Store transitions (s, a, r, s') in buffer</li>
-                                    <li>Sample random batches for training</li>
-                                    <li>Breaks temporal correlation</li>
-                                    <li>Each experience used multiple times</li>
-                                    <li>Essential for stable DQN training</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🎯</span> Target Network</h3>
-                            <p>Stabilizing the moving target</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li>Frozen copy of Q-network for targets</li>
-                                    <li>Updated every N steps (e.g., 10000)</li>
-                                    <li>Prevents chasing a moving target</li>
-                                    <li>Critical for DQN stability</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📹</span> Frame Stacking</h3>
-                            <p>Capturing motion information</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li>Single frame: no velocity information</li>
-                                    <li>Stack last 4 frames as input</li>
-                                    <li>Agent can see ball direction/speed</li>
-                                    <li>State: 4 × 84 × 84 grayscale</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div class="section-meta">12 concepts<br><span class="expand-btn">▼</span></div>
             </div>
-
-            <!-- POLICY GRADIENT METHODS -->
-            <div class="branch theme-pink" data-branch="pg">
-                <div class="branch-header" onclick="toggleBranch(this.parentElement)">
-                    <div class="branch-icon">🎯</div>
-                    <div class="branch-title">
-                        <h2>Policy Gradient Methods</h2>
-                        <p>Direct policy optimization - Foundation of modern RL for LLMs</p>
+            <div class="section-content">
+                <div class="cards-grid">
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Why Policy Gradient?</h3><span class="card-tag">Motivation</span></div>
+                        <p class="card-desc">Optimize policy directly instead of deriving it from value functions.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Value methods: learn Q → derive π greedily</li>
+                                <li>Policy gradient: learn π_θ directly!</li>
+                                <li>Better for continuous action spaces</li>
+                                <li>Can learn stochastic policies</li>
+                                <li>Foundation for RLHF in ChatGPT/Claude</li>
+                            </ul>
+                        </div>
                     </div>
-                    <div class="expand-icon">▼</div>
-                </div>
-                <div class="branch-content">
-                    <div class="concepts">
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>💡</span> Why Policy Gradient?</h3>
-                            <p>Optimize policy directly, not via Q-values</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li>Value methods: learn Q → derive policy</li>
-                                    <li>Policy gradient: learn π directly!</li>
-                                    <li>Better for continuous action spaces</li>
-                                    <li>Can learn stochastic policies</li>
-                                    <li>Foundation for RLHF in ChatGPT</li>
-                                </ul>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Policy Gradient Theorem</h3><span class="card-tag">Theory</span></div>
+                        <p class="card-desc">The key insight making policy gradients tractable.</p>
+                        <div class="formula">∇J(θ) ∝ E_π[Q(s,a) ∇ log π_θ(a|s)]</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Key insight:</strong> No gradient through state distribution μ(s)</li>
+                                <li>Score function: ∇ log π = ∇π / π</li>
+                                <li>Enables estimation from samples</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">REINFORCE</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">First practical policy gradient — simple but high variance.</p>
+                        <div class="formula">θ ← θ + α · Gₜ · ∇ log π_θ(aₜ|sₜ)</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Use episode return Gₜ as Q estimate</li>
+                                <li>High return → increase action probability</li>
+                                <li>Simple but high variance</li>
+                                <li>Must wait for episode end</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Baseline & Variance Reduction</h3><span class="card-tag">Technique</span></div>
+                        <p class="card-desc">Subtracting value function dramatically reduces gradient variance.</p>
+                        <div class="formula">θ ← θ + α · (Gₜ - V(s)) · ∇ log π_θ(aₜ|sₜ)</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Baseline b(s) = V(s) is state-dependent only</li>
+                                <li>Doesn't bias the gradient (proof: expectation zero)</li>
+                                <li>Gₜ - V(s) = Advantage (better than average?)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Actor-Critic</h3><span class="card-tag">Architecture</span></div>
+                        <p class="card-desc">Combining policy gradient with TD learning — best of both worlds.</p>
+                        <div class="formula">θ ← θ + α · δ · ∇ log π_θ   where δ = r + γV(s') - V(s)</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Actor:</strong> Policy π_θ (chooses actions)</li>
+                                <li><strong>Critic:</strong> Value V (evaluates states)</li>
+                                <li>TD error δ replaces full return Gₜ</li>
+                                <li>Can update every step, not just episode end</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Advantage Function</h3><span class="card-tag">Theory</span></div>
+                        <p class="card-desc">How much better is this action than the average action in this state?</p>
+                        <div class="formula">A(s,a) = Q(s,a) - V(s)</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>A > 0: action better than expected</li>
+                                <li>A < 0: action worse than expected</li>
+                                <li>A = 0: action is average for this state</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">GAE (Generalized Advantage Estimation)</h3><span class="card-tag">Technique</span></div>
+                        <p class="card-desc">Flexible bias-variance tradeoff via exponentially-weighted TD errors.</p>
+                        <div class="formula">Â_GAE = Σₖ (γλ)ᵏ δₜ₊ₖ</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>λ=0: pure TD (high bias, low variance)</li>
+                                <li>λ=1: pure MC (low bias, high variance)</li>
+                                <li>λ≈0.95 typical in practice</li>
+                                <li>Used in PPO, TRPO, modern algorithms</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">KL Divergence</h3><span class="card-tag">Theory</span></div>
+                        <p class="card-desc">Measuring distribution difference — critical for trust regions.</p>
+                        <div class="formula">D_KL(P || Q) = Σₓ P(x) log(P(x) / Q(x))</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Intuition:</strong> Surprise using Q when data comes from P</li>
+                                <li>KL = 0 means identical distributions</li>
+                                <li><strong>Not symmetric:</strong> KL(P||Q) ≠ KL(Q||P)</li>
+                                <li>TRPO/PPO: prevent policy from changing too much</li>
+                                <li>RLHF: keep LLM close to base model</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">TRPO (Trust Region Policy Optimization)</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">Stable updates via constrained optimization with KL bound.</p>
+                        <div class="formula">max L(θ)  subject to  D_KL(π_old || π_new) ≤ δ</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Trust Region:</strong> Bound KL to prevent large updates</li>
+                                <li>Guarantees monotonic improvement</li>
+                                <li>Foundation for PPO and GRPO</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">PPO (Proximal Policy Optimization)</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">Simplified trust region via clipping — powers most RLHF systems.</p>
+                        <div class="formula">L_CLIP = min(rA, clip(r, 1-ε, 1+ε)A)  where r = π_new/π_old</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Ratio r:</strong> π_new(a|s) / π_old(a|s)</li>
+                                <li><strong>Clipping:</strong> Limits how much π can change</li>
+                                <li>Simpler than TRPO — no conjugate gradient</li>
+                                <li>Used in ChatGPT, Claude, most RLHF systems</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">Industry Standard</div>
+                                <p class="context-text">PPO became the default for RLHF because it's stable, sample-efficient, and easy to implement. The clipping mechanism prevents catastrophic policy updates while still allowing meaningful learning.</p>
                             </div>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📊</span> Policy Parameterization</h3>
-                            <p>Representing policies with parameters θ</p>
-                            <div class="concept-details">
-                                <div class="formula">π(a|s,θ) = exp(h(s,a,θ)) / Σ exp(h(s,b,θ))</div>
-                                <ul>
-                                    <li>h(s,a,θ): learnable preference function</li>
-                                    <li>Softmax converts preferences to probabilities</li>
-                                    <li>In practice: entire neural network = π_θ</li>
-                                    <li>Goal: find θ that maximizes performance J(θ)</li>
-                                </ul>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">GRPO (Group Relative Policy Optimization)</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">DeepSeek's critic-free method for LLM reasoning.</p>
+                        <div class="formula">L = L_PPO - β · D_KL(π_θ || π_ref)</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Key Innovation:</strong> No value function/critic needed</li>
+                                <li><strong>Group Advantage:</strong> Aᵢ = (rᵢ - mean(r)) / std(r)</li>
+                                <li>Generate G responses, normalize within group</li>
+                                <li>Perfect for verifiable rewards (math/code)</li>
+                                <li>Powers DeepSeek-R1 reasoning</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">LLM Context</div>
+                                <p class="context-text">State = prompt + tokens so far. Action = next token. Rewards only at response end. By comparing multiple completions within a group, GRPO eliminates the need for a separate critic network.</p>
                             </div>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>⭐</span> Policy Gradient Theorem</h3>
-                            <p>The key insight making gradients tractable</p>
-                            <div class="concept-details">
-                                <div class="formula">∇J(θ) ∝ Σ_s μ(s) Σ_a Q(s,a) ∇π(a|s,θ)</div>
-                                <ul>
-                                    <li>μ(s): state distribution (how often visited)</li>
-                                    <li>Q(s,a): expected return for action</li>
-                                    <li>∇π: gradient of policy</li>
-                                    <li><strong>Key:</strong> No gradient of μ(s) needed!</li>
-                                    <li>Makes computation tractable</li>
-                                </ul>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">RLHF (RL from Human Feedback)</h3><span class="card-tag">Pipeline</span></div>
+                        <p class="card-desc">Three-stage process aligning LLMs with human preferences.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Stage 1:</strong> SFT on human demonstrations</li>
+                                <li><strong>Stage 2:</strong> Train reward model on preference pairs</li>
+                                <li><strong>Stage 3:</strong> Optimize policy with PPO + reward model</li>
+                                <li><strong>KL penalty:</strong> Prevents drifting from base model</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">Powers Modern LLMs</div>
+                                <p class="context-text">RLHF is why ChatGPT feels helpful rather than just completing text. The reward model captures human preferences about helpfulness, harmlessness, and honesty.</p>
                             </div>
                         </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🔥</span> REINFORCE Algorithm</h3>
-                            <p>First practical policy gradient method</p>
-                            <div class="concept-details">
-                                <div class="formula">θ ← θ + α · Gₜ · ∇log π(aₜ|sₜ,θ)</div>
-                                <ul>
-                                    <li>Use actual return Gₜ as Q estimate</li>
-                                    <li>High return → increase action probability</li>
-                                    <li>∇log π = ∇π/π (appears in PPO, GRPO)</li>
-                                    <li>Simple but high variance</li>
-                                    <li>Must wait for episode end</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📉</span> Baseline & Variance Reduction</h3>
-                            <p>Subtracting value function reduces variance</p>
-                            <div class="concept-details">
-                                <div class="formula">θ ← θ + α · (Gₜ - V(s)) · ∇log π(aₜ|sₜ,θ)</div>
-                                <ul>
-                                    <li>Baseline b(s) = V(s) (state-dependent only)</li>
-                                    <li>Doesn't bias the gradient</li>
-                                    <li>Gₜ - V(s) = Advantage (how much better than average)</li>
-                                    <li>Significantly reduces variance</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🎭</span> Actor-Critic Methods</h3>
-                            <p>Combining policy gradient with TD learning</p>
-                            <div class="concept-details">
-                                <div class="formula">θ ← θ + α · δ · ∇log π (where δ = r + γV(s') - V(s))</div>
-                                <ul>
-                                    <li><strong>Actor:</strong> Policy π_θ (takes actions)</li>
-                                    <li><strong>Critic:</strong> Value function V (evaluates states)</li>
-                                    <li>TD error δ replaces return Gₜ</li>
-                                    <li>Can update every step (not just episode end)</li>
-                                    <li>Lower variance than REINFORCE</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📊</span> Advantage Function</h3>
-                            <p>How much better is action a than average?</p>
-                            <div class="concept-details">
-                                <div class="formula">A(s,a) = Q(s,a) - V(s)</div>
-                                <ul>
-                                    <li>Positive A: action better than expected</li>
-                                    <li>Negative A: action worse than expected</li>
-                                    <li>Zero A: action is average for this state</li>
-                                    <li>Used in policy improvement decisions</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🌈</span> GAE (Generalized Advantage)</h3>
-                            <p>Flexible bias-variance tradeoff</p>
-                            <div class="concept-details">
-                                <div class="formula">Â_GAE = Σₖ (γλ)^k δₜ₊ₖ</div>
-                                <ul>
-                                    <li>Weighted combination of n-step returns</li>
-                                    <li>λ=0: pure TD (high bias, low variance)</li>
-                                    <li>λ=1: pure MC (low bias, high variance)</li>
-                                    <li>λ≈0.95 typical in practice</li>
-                                    <li>Used in PPO, TRPO, modern algorithms</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📏</span> KL Divergence</h3>
-                            <p>Measuring how different two probability distributions are</p>
-                            <div class="concept-details">
-                                <div class="formula">D_KL(P || Q) = Σ P(x) · log(P(x) / Q(x))</div>
-                                <ul>
-                                    <li><strong>Intuition:</strong> "How surprised would I be using Q when data comes
-                                        from P?"</li>
-                                    <li>KL = 0 means distributions are identical</li>
-                                    <li>Higher KL = more different distributions</li>
-                                    <li><strong>NOT symmetric:</strong> KL(P||Q) ≠ KL(Q||P)</li>
-                                    <li><strong>In RL:</strong> Measures how much policy has changed</li>
-                                    <li>TRPO/PPO use KL to prevent policy from changing too much</li>
-                                    <li>RLHF uses KL to keep LLM close to base model</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🛡️</span> TRPO (Trust Region Policy Optimization)</h3>
-                            <p>Stable policy updates via constrained optimization</p>
-                            <div class="concept-details">
-                                <div class="formula">max L(θ) subject to D_KL(π_old || π_new) ≤ δ</div>
-                                <ul>
-                                    <li><strong>Core Idea:</strong> New policy performance = old + sum of advantages
-                                    </li>
-                                    <li><strong>Problem:</strong> Don't know state distribution under new policy</li>
-                                    <li><strong>Solution:</strong> Surrogate objective using old policy's distribution
-                                    </li>
-                                    <li><strong>Trust Region:</strong> Bound KL divergence to prevent large updates</li>
-                                    <li>Guarantees monotonic improvement</li>
-                                    <li>Foundation for PPO and GRPO (DeepSeek)</li>
-                                    <li>Critical for LLM alignment - keeps policy close to base model</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>📎</span> PPO (Proximal Policy Optimization)</h3>
-                            <p>Simplified trust region via clipping</p>
-                            <div class="concept-details">
-                                <div class="formula">L = L_CLIP - c₁·L_VF + c₂·S[π]</div>
-                                <ul>
-                                    <li><strong>Ratio:</strong> r = π_new(a|s) / π_old(a|s)</li>
-                                    <li><strong>L_CLIP:</strong> min(r·A, clip(r, 1-ε, 1+ε)·A)</li>
-                                    <li><strong>L_VF:</strong> Value function loss for advantage estimation</li>
-                                    <li><strong>S[π]:</strong> Entropy bonus for exploration</li>
-                                    <li><strong>Intuition:</strong> Clip prevents over-optimization</li>
-                                    <li>Simpler than TRPO - no conjugate gradient needed</li>
-                                    <li>Used in ChatGPT, Claude, and most RLHF systems</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🎯</span> GRPO (Group Relative Policy Optimization)</h3>
-                            <p>DeepSeek's critic-free policy optimization</p>
-                            <div class="concept-details">
-                                <div class="formula">L = L_PPO - β·D_KL(π_θ || π_ref)</div>
-                                <ul>
-                                    <li><strong>Key Innovation:</strong> No value function/critic needed!</li>
-                                    <li><strong>LLM States:</strong> Prompt + generated tokens so far</li>
-                                    <li><strong>LLM Actions:</strong> Next token from vocabulary</li>
-                                    <li><strong>Sparse Rewards:</strong> Only at end of response</li>
-                                    <li><strong>Group Advantage:</strong> A_i = (r_i - mean(r)) / std(r)</li>
-                                    <li>Generate G responses, normalize rewards within group</li>
-                                    <li><strong>KL penalty:</strong> Prevents drift from base model</li>
-                                    <li>Perfect for verifiable rewards (math/code)</li>
-                                    <li>Used in DeepSeek-R1 for reasoning</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>👤</span> RLHF (RL from Human Feedback)</h3>
-                            <p>Training LLMs with human preferences</p>
-                            <div class="concept-details">
-                                <ul>
-                                    <li><strong>Step 1:</strong> Supervised Fine-Tuning (SFT) on demonstrations</li>
-                                    <li><strong>Step 2:</strong> Train reward model on preference pairs</li>
-                                    <li><strong>Step 3:</strong> Optimize policy with PPO using reward model</li>
-                                    <li><strong>KL constraint:</strong> Prevent model from deviating too far</li>
-                                    <li>Reward = RM(response) - β·KL(policy||reference)</li>
-                                    <li>Powers ChatGPT, Claude, and aligned LLMs</li>
-                                    <li>Alternative: DPO (Direct Preference Optimization) skips RM</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="concept" onclick="toggleConcept(this)">
-                            <h3><span>🎯</span> DPO (Direct Preference Optimization)</h3>
-                            <p>Skip the reward model, train directly on preferences</p>
-                            <div class="concept-details">
-                                <div class="formula">L = -log σ(β[log π_θ(y⁺|x) - log π_θ(y⁻|x) - (reference gap)])
-                                </div>
-                                <ul>
-                                    <li><strong>Key insight:</strong> Treat preferences as logistic regression</li>
-                                    <li><strong>Policy gap:</strong> Difference in log-probs for preferred vs rejected
-                                    </li>
-                                    <li><strong>Reference gap:</strong> Same difference under frozen base model</li>
-                                    <li><strong>Gradient effect:</strong> Increase probability of y⁺, decrease y⁻</li>
-                                    <li><strong>Scaling factor:</strong> β·(1-σ(z)) — strongest when model is unsure
-                                    </li>
-                                    <li>No reward model needed — simpler pipeline than RLHF</li>
-                                    <li>Used by Llama, Zephyr, and many modern aligned models</li>
-                                </ul>
+                    </div>
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">DPO (Direct Preference Optimization)</h3><span class="card-tag">Algorithm</span></div>
+                        <p class="card-desc">Skip the reward model — train directly on preferences.</p>
+                        <div class="formula">L = -log σ(β[log π_θ(y⁺|x) - log π_θ(y⁻|x) - ref_gap])</div>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li><strong>Key insight:</strong> Preferences as logistic regression</li>
+                                <li>Increase probability of preferred response y⁺</li>
+                                <li>Decrease probability of rejected response y⁻</li>
+                                <li>No reward model needed — simpler pipeline</li>
+                                <li>Used by Llama 2, Zephyr, many modern models</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">RLHF vs DPO</div>
+                                <p class="context-text">DPO shows the reward model is implicit in the policy itself. This simplifies training but may have less flexibility than explicit reward modeling for complex preference structures.</p>
                             </div>
                         </div>
                     </div>
@@ -977,46 +922,40 @@
     </div>
 
     <script>
-        function toggleBranch(branch) {
-            branch.classList.toggle('expanded');
+        function toggleSection(section) {
+            section.classList.toggle('expanded');
         }
 
-        function toggleConcept(concept) {
-            concept.classList.toggle('expanded');
+        function toggleCard(card) {
+            card.classList.toggle('expanded');
         }
 
         function filterConcepts(query) {
             query = query.toLowerCase();
-            const branches = document.querySelectorAll('.branch');
-            const concepts = document.querySelectorAll('.concept');
+            const sections = document.querySelectorAll('.section');
+            const cards = document.querySelectorAll('.card');
 
             if (!query) {
-                branches.forEach(b => b.classList.remove('hidden'));
-                concepts.forEach(c => c.classList.remove('hidden'));
+                sections.forEach(s => s.classList.remove('hidden'));
+                cards.forEach(c => c.classList.remove('hidden'));
                 return;
             }
 
-            concepts.forEach(concept => {
-                const text = concept.textContent.toLowerCase();
-                concept.classList.toggle('hidden', !text.includes(query));
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.classList.toggle('hidden', !text.includes(query));
             });
 
-            branches.forEach(branch => {
-                const visibleConcepts = branch.querySelectorAll('.concept:not(.hidden)');
-                const branchText = branch.querySelector('.branch-title').textContent.toLowerCase();
-                const shouldHide = visibleConcepts.length === 0 && !branchText.includes(query);
-                branch.classList.toggle('hidden', shouldHide);
-                if (!shouldHide && visibleConcepts.length > 0) {
-                    branch.classList.add('expanded');
+            sections.forEach(section => {
+                const visibleCards = section.querySelectorAll('.card:not(.hidden)');
+                const sectionText = section.querySelector('.section-header').textContent.toLowerCase();
+                const shouldHide = visibleCards.length === 0 && !sectionText.includes(query);
+                section.classList.toggle('hidden', shouldHide);
+                if (!shouldHide && visibleCards.length > 0) {
+                    section.classList.add('expanded');
                 }
             });
         }
-
-        // Expand first branch by default
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('RL Mind Map loaded successfully!');
-        });
     </script>
 </body>
-
 </html>
