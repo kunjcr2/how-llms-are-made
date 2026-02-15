@@ -133,6 +133,7 @@ Notes on reasoning capabilities across 4 lectures with code.
 |-------|-------|
 | Vision Transformers (ViT) | Demo notebook |
 | Swin Transformers | Theory (`.md`) + Implementation (`.py`) |
+| Detection Transformer (DETR) | Theory (`.md`) + Implementation (`.py`) |
 | TinyViT | Implementation (`.py`) |
 | DeiT | Data-efficient Image Transformers (`.md`) |
 | CNNs | Convolutional Neural Networks (`.md`) |
