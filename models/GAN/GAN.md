@@ -11,20 +11,23 @@ A **Generative Adversarial Network (GAN)** is a deep learning framework where tw
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    Z["Random Noise\n(Latent Vector z)"] --> G["Generator\nG(z)"]
-    G --> FakeData["Generated\n(Fake) Data"]
-    RealData["Real Data\n(Training Set)"] --> D["Discriminator\nD(x)"]
-    FakeData --> D
-    D --> Output["Real or Fake?\n(0 or 1)"]
+```
+                          ┌─────────────────┐
+  Random Noise z  ──────► │    Generator    │ ──────►  Fake Image x_fake = G(z)
+  ~ N(0, 1)               │      G(z)       │                  │
+                          └─────────────────┘                  │
+                                                               ▼
+                                                      ┌───────────────┐
+  Real Image x_real  ────────────────────────────────►│ Discriminator │ ──► D(x) ∈ (0, 1)
+  ~ p_data                                            │     D(x)         Real or Fake?
+                                                      └───────────────┘
+                                                               │
+                                          ┌────────────────────┴────────────────────┐
+                                          ▼                                         ▼
+                                  D loss: maximize                          G loss: maximize
+                              log D(x_real) + log(1-D(x_fake))              log D(x_fake)
 
-    style G fill:#4a9eff,stroke:#2d7cd6,color:#fff
-    style D fill:#ff6b6b,stroke:#d64545,color:#fff
-    style Z fill:#333,stroke:#555,color:#fff
-    style FakeData fill:#333,stroke:#555,color:#fff
-    style RealData fill:#333,stroke:#555,color:#fff
-    style Output fill:#333,stroke:#555,color:#fff
+                          ◄ ── ── ── gradients (backprop) ── ── ── ──
 ```
 
 ### Generator (G)
@@ -54,24 +57,31 @@ Where:
 
 ### Training Steps (Per Iteration)
 
-```mermaid
-flowchart TD
-    A["Sample batch of\nreal images"] --> B["Sample batch of\nrandom noise z"]
-    B --> C["Generate fake images\nvia Generator"]
-    C --> D["Train Discriminator\non real + fake batch"]
-    D --> E["Compute Discriminator loss\n& update D weights"]
-    E --> F["Sample new\nrandom noise z"]
-    F --> G["Generate fake images\nvia Generator"]
-    G --> H["Pass fakes through\nDiscriminator"]
-    H --> I["Compute Generator loss\n& update G weights"]
-    I --> J{Converged?}
-    J -- No --> A
-    J -- Yes --> K["Done ✓"]
-
-    style D fill:#ff6b6b,stroke:#d64545,color:#fff
-    style E fill:#ff6b6b,stroke:#d64545,color:#fff
-    style G fill:#4a9eff,stroke:#2d7cd6,color:#fff
-    style I fill:#4a9eff,stroke:#2d7cd6,color:#fff
+```
+  ┌──────────────────────────────────────────────────────────────┐
+  │                   TRAINING LOOP (per epoch)                  │
+  │                                                              │
+  │  ┌─── Train Discriminator ───────────────────────────────┐   │
+  │  │  1. Sample real images from dataset                   │   │
+  │  │  2. Sample noise z, generate fakes via G(z)           │   │
+  │  │  3. D scores both real & fake                         │   │
+  │  │  4. Compute D loss & update D weights                 │   │
+  │  └───────────────────────────────────────────────────────┘   │
+  │                          │                                   │
+  │                          ▼                                   │
+  │  ┌─── Train Generator ───────────────────────────────────┐   │
+  │  │  5. Sample new noise z, generate fakes via G(z)       │   │
+  │  │  6. Pass fakes through D (D weights frozen)           │   │
+  │  │  7. Compute G loss & update G weights                 │   │
+  │  └───────────────────────────────────────────────────────┘   │
+  │                          │                                   │
+  │                          ▼                                   │
+  │                    Converged? ── No ──► repeat               │
+  │                          │                                   │
+  │                         Yes                                  │
+  │                          ▼                                   |
+  │                        Done!                                 | 
+  └──────────────────────────────────────────────────────────────┘
 ```
 
 **Step 1 — Train the Discriminator:**

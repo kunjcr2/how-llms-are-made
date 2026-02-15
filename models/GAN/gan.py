@@ -34,64 +34,77 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Generator(nn.Module):
     """
-    Maps a latent noise vector z (100-dim) to a 1x28x28 image.
+    Maps a latent noise vector z (100-dim) to a 1x28x28 image
+    using transposed convolutions (learnable upsampling).
 
     Architecture:
-        z (100) → 256 → 512 → 1024 → 784 → reshape to (1, 28, 28)
+        z (100,1,1) → ConvT → (256,7,7) → (128,14,14) → (64,28,28) → (1,28,28)
     """
 
     def __init__(self, latent_dim: int = LATENT_DIM):
         super().__init__()
         self.model = nn.Sequential(
-            nn.Linear(latent_dim, 256),
-            nn.BatchNorm1d(256),
+            # (B, 100, 1, 1) → (B, 256, 7, 7)
+            nn.ConvTranspose2d(latent_dim, 256, kernel_size=7, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Linear(256, 512),
-            nn.BatchNorm1d(512),
+            # (B, 256, 7, 7) → (B, 128, 14, 14)
+            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Linear(512, 1024),
-            nn.BatchNorm1d(1024),
+            # (B, 128, 14, 14) → (B, 64, 28, 28)
+            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(64),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Linear(1024, CHANNELS * IMG_SIZE * IMG_SIZE),  # 784
+            # (B, 64, 28, 28) → (B, 1, 28, 28)
+            nn.ConvTranspose2d(64, CHANNELS, kernel_size=3, stride=1, padding=1, bias=False),
             nn.Tanh(),  # Output in [-1, 1] to match normalized images
         )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
-        img = self.model(z)
-        return img.view(img.size(0), CHANNELS, IMG_SIZE, IMG_SIZE)
+        # Reshape noise vector to (B, latent_dim, 1, 1) for conv input
+        z = z.view(z.size(0), -1, 1, 1)
+        return self.model(z)
 
 
 # ─── Discriminator ──────────────────────────────────────────────────────────────
 
 class Discriminator(nn.Module):
     """
-    Takes a 1x28x28 image and outputs a probability (real vs fake).
+    Takes a 1x28x28 image and outputs a probability (real vs fake)
+    using strided convolutions (learnable downsampling).
 
     Architecture:
-        flatten (784) → 512 → 256 → 1 → sigmoid
+        (1,28,28) → Conv → (64,14,14) → (128,7,7) → (256,4,4) → (1,1,1)
     """
 
     def __init__(self):
         super().__init__()
         self.model = nn.Sequential(
-            nn.Linear(CHANNELS * IMG_SIZE * IMG_SIZE, 512),
+            # (B, 1, 28, 28) → (B, 64, 14, 14) — no BatchNorm on first layer (DCGAN convention)
+            nn.Conv2d(CHANNELS, 64, kernel_size=4, stride=2, padding=1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.3),
 
-            nn.Linear(512, 256),
+            # (B, 64, 14, 14) → (B, 128, 7, 7)
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.3),
 
-            nn.Linear(256, 1),
+            # (B, 128, 7, 7) → (B, 256, 4, 4)
+            nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            # (B, 256, 4, 4) → (B, 1, 1, 1)
+            nn.Conv2d(256, 1, kernel_size=4, stride=1, padding=0, bias=False),
             nn.Sigmoid(),
         )
 
     def forward(self, img: torch.Tensor) -> torch.Tensor:
-        flat = img.view(img.size(0), -1)
-        return self.model(flat)
+        return self.model(img).view(img.size(0), 1)  # Flatten to (B, 1)
 
 
 # ─── Training ───────────────────────────────────────────────────────────────────
