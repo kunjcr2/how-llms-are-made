@@ -1,0 +1,1225 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SAM — Architecture + Training Flow</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #06080d;
+            --panel: #0d1117;
+            --card: #111827;
+            --ink: #e5e7eb;
+            --muted: #8b9dc3;
+            --line: #1e293b;
+            --lineH: #334155;
+            --blue: #60a5fa;
+            --blueGlow: rgba(96, 165, 250, .15);
+            --green: #34d399;
+            --greenGlow: rgba(52, 211, 153, .12);
+            --amber: #fbbf24;
+            --amberGlow: rgba(251, 191, 36, .12);
+            --rose: #fb7185;
+            --roseGlow: rgba(251, 113, 133, .12);
+            --purple: #a78bfa;
+            --purpleGlow: rgba(167, 139, 250, .12);
+            --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+            --sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+            --radius: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--sans);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Ambient background ─────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 900px 500px at 20% 10%, rgba(96, 165, 250, .08), transparent),
+                radial-gradient(ellipse 700px 500px at 80% 70%, rgba(52, 211, 153, .06), transparent),
+                radial-gradient(ellipse 600px 400px at 50% 40%, rgba(167, 139, 250, .04), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Header ─────────────────────────────────────────── */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(6, 8, 13, .82);
+            backdrop-filter: blur(20px) saturate(1.4);
+        }
+
+        header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.3px;
+            background: linear-gradient(135deg, #e2e8f0 0%, var(--blue) 50%, var(--green) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header .sub {
+            margin-top: 6px;
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.5;
+            max-width: 900px;
+        }
+
+        .pill {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border: 1px solid var(--lineH);
+            border-radius: 999px;
+            color: #cbd5e1;
+            vertical-align: middle;
+        }
+
+        /* ── Flow pipeline indicator ─────────────────────────── */
+        .pipeline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pipeline .step {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: rgba(17, 24, 39, .6);
+            color: #94a3b8;
+            transition: all .3s;
+        }
+
+        .pipeline .step:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+
+        .pipeline .arrow-sep {
+            color: #475569;
+            font-size: 14px;
+        }
+
+        /* ── Main layout ─────────────────────────────────────── */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            padding: 24px 32px;
+            max-width: 1500px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── Section titles ──────────────────────────────────── */
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--line), transparent);
+        }
+
+        /* ── Card system ──────────────────────────────────────── */
+        .card {
+            background: rgba(13, 17, 23, .7);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            transition: border-color .3s, box-shadow .3s;
+        }
+
+        .card:hover {
+            border-color: var(--lineH);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, .25);
+        }
+
+        .card.blue {
+            border-color: rgba(96, 165, 250, .25);
+        }
+
+        .card.blue:hover {
+            border-color: rgba(96, 165, 250, .5);
+            box-shadow: 0 8px 40px rgba(96, 165, 250, .08);
+        }
+
+        .card.green {
+            border-color: rgba(52, 211, 153, .25);
+        }
+
+        .card.green:hover {
+            border-color: rgba(52, 211, 153, .5);
+            box-shadow: 0 8px 40px rgba(52, 211, 153, .08);
+        }
+
+        .card.amber {
+            border-color: rgba(251, 191, 36, .25);
+        }
+
+        .card.amber:hover {
+            border-color: rgba(251, 191, 36, .5);
+            box-shadow: 0 8px 40px rgba(251, 191, 36, .08);
+        }
+
+        .card.rose {
+            border-color: rgba(251, 113, 133, .25);
+        }
+
+        .card.rose:hover {
+            border-color: rgba(251, 113, 133, .5);
+            box-shadow: 0 8px 40px rgba(251, 113, 133, .08);
+        }
+
+        .card.purple {
+            border-color: rgba(167, 139, 250, .25);
+        }
+
+        .card.purple:hover {
+            border-color: rgba(167, 139, 250, .5);
+            box-shadow: 0 8px 40px rgba(167, 139, 250, .08);
+        }
+
+        .card-head {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-head .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .card-head .icon.blue {
+            background: var(--blueGlow);
+            border: 1px solid rgba(96, 165, 250, .3);
+        }
+
+        .card-head .icon.green {
+            background: var(--greenGlow);
+            border: 1px solid rgba(52, 211, 153, .3);
+        }
+
+        .card-head .icon.amber {
+            background: var(--amberGlow);
+            border: 1px solid rgba(251, 191, 36, .3);
+        }
+
+        .card-head .icon.rose {
+            background: var(--roseGlow);
+            border: 1px solid rgba(251, 113, 133, .3);
+        }
+
+        .card-head .icon.purple {
+            background: var(--purpleGlow);
+            border: 1px solid rgba(167, 139, 250, .3);
+        }
+
+        .card-head .label {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -.2px;
+        }
+
+        .card-head .sublabel {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* ── Architecture grid ───────────────────────────────── */
+        .arch-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        /* ── Shape badge ─────────────────────────────────────── */
+        .shape {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 6px;
+            background: rgba(2, 6, 23, .7);
+            border: 1px solid var(--line);
+            color: #e2e8f0;
+            margin: 2px 0;
+        }
+
+        .shape.blue {
+            border-color: rgba(96, 165, 250, .4);
+            color: var(--blue);
+        }
+
+        .shape.green {
+            border-color: rgba(52, 211, 153, .4);
+            color: var(--green);
+        }
+
+        .shape.amber {
+            border-color: rgba(251, 191, 36, .4);
+            color: var(--amber);
+        }
+
+        .shape.rose {
+            border-color: rgba(251, 113, 133, .4);
+            color: var(--rose);
+        }
+
+        /* ── Dimension flow ──────────────────────────────────── */
+        .dim-flow {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+            padding: 14px 16px;
+            background: rgba(2, 6, 23, .5);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+        }
+
+        .dim-flow .d {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(17, 24, 39, .9);
+            border: 1px solid var(--lineH);
+            color: #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .dim-flow .op {
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .dim-flow .arr {
+            color: #475569;
+            font-size: 16px;
+        }
+
+        /* ── Bullet list ─────────────────────────────────────── */
+        .bullets {
+            list-style: none;
+            padding: 0;
+        }
+
+        .bullets li {
+            position: relative;
+            padding-left: 18px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .bullets li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 7px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--lineH);
+        }
+
+        .bullets.blue li::before {
+            background: var(--blue);
+        }
+
+        .bullets.green li::before {
+            background: var(--green);
+        }
+
+        .bullets.amber li::before {
+            background: var(--amber);
+        }
+
+        .bullets.rose li::before {
+            background: var(--rose);
+        }
+
+        .note-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 10px;
+            padding: 10px 14px;
+            border-left: 2px solid var(--lineH);
+            background: rgba(2, 6, 23, .4);
+            border-radius: 0 8px 8px 0;
+            line-height: 1.5;
+        }
+
+        /* ── Connection arrows (CSS-drawn) ───────────────────── */
+        .connector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .connector .v-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .connector .v-arrow .line {
+            width: 2px;
+            height: 28px;
+            background: linear-gradient(180deg, var(--lineH), var(--blue));
+        }
+
+        .connector .v-arrow .head {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid var(--blue);
+        }
+
+        .connector .v-arrow.green .line {
+            background: linear-gradient(180deg, var(--lineH), var(--green));
+        }
+
+        .connector .v-arrow.green .head {
+            border-top-color: var(--green);
+        }
+
+        .connector .label {
+            font-size: 11px;
+            color: var(--muted);
+            margin-left: 10px;
+            font-weight: 500;
+        }
+
+        /* ── Horizontal flow arrows ──────────────────────────── */
+        .h-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+        }
+
+        .h-connector .h-line {
+            width: 30px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--lineH), var(--green));
+        }
+
+        .h-connector .h-head {
+            width: 0;
+            height: 0;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 7px solid var(--green);
+        }
+
+        /* ── Training section ────────────────────────────────── */
+        .training-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .loss-eq {
+            font-family: var(--mono);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 16px 20px;
+            border-radius: 10px;
+            background: rgba(2, 6, 23, .6);
+            border: 1px solid var(--line);
+            text-align: center;
+            letter-spacing: .5px;
+            margin: 12px 0;
+        }
+
+        .loss-eq .hl-blue {
+            color: var(--blue);
+        }
+
+        .loss-eq .hl-amber {
+            color: var(--amber);
+        }
+
+        .loss-eq .hl-green {
+            color: var(--green);
+        }
+
+        .loss-eq .hl-rose {
+            color: var(--rose);
+        }
+
+        /* ── Why section (FAQ accordion) ─────────────────────── */
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .faq-item {
+            background: rgba(13, 17, 23, .6);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color .3s;
+        }
+
+        .faq-item:hover {
+            border-color: var(--lineH);
+        }
+
+        .faq-q {
+            padding: 14px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+            transition: color .3s;
+        }
+
+        .faq-q:hover {
+            color: var(--blue);
+        }
+
+        .faq-q .num {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(96, 165, 250, .1);
+            border: 1px solid rgba(96, 165, 250, .25);
+            color: var(--blue);
+            flex-shrink: 0;
+        }
+
+        .faq-q .chevron {
+            margin-left: auto;
+            transition: transform .3s;
+            color: #475569;
+            font-size: 16px;
+        }
+
+        .faq-item.open .faq-q .chevron {
+            transform: rotate(180deg);
+        }
+
+        .faq-a {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height .4s ease, padding .3s;
+        }
+
+        .faq-item.open .faq-a {
+            max-height: 400px;
+            padding: 0 18px 16px;
+        }
+
+        .faq-a p {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .faq-a p .k {
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        /* ── Backprop banner ──────────────────────────────────── */
+        .backprop-banner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(52, 211, 153, .06), rgba(96, 165, 250, .06));
+            border: 1px solid rgba(52, 211, 153, .2);
+            margin-top: 20px;
+        }
+
+        .backprop-banner .icon-lg {
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .backprop-banner .text {
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .backprop-banner .text strong {
+            color: var(--green);
+        }
+
+        /* ── Legend ───────────────────────────────────────────── */
+        .legend {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            padding: 16px 20px;
+            background: rgba(2, 6, 23, .5);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ── Iterative refinement callout ─────────────────────── */
+        .callout-box {
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 1px dashed var(--lineH);
+            background: rgba(2, 6, 23, .4);
+            margin-top: 16px;
+        }
+
+        .callout-box .callout-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--amber);
+            margin-bottom: 6px;
+        }
+
+        .callout-box p {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: 12px;
+            background: rgba(2, 6, 23, .7);
+            padding: 2px 7px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            color: #e2e8f0;
+        }
+
+        @media (max-width: 900px) {
+            .arch-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .training-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .faq-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                padding: 16px 20px;
+            }
+
+            .main {
+                padding: 16px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>SAM — Segment Anything Model</h1>
+        <p class="sub">Architecture + training flow with tensor shapes. Everything the model does during one training
+            step, from data sampling to backprop.</p>
+        <div class="pipeline">
+            <span class="step">📦 SA-1B sample</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🎯 Simulate prompt</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🖼️ Image encoder</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">📍 Prompt encoder</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🎭 Mask decoder</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">3 masks + IoU</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">📉 Loss</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">⟲ Backprop</span>
+        </div>
+    </header>
+
+    <div class="main">
+
+        <!-- ==================== LEGEND ==================== -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--blue)"></div> Image stream / embeddings
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--amber)"></div> Prompt stream / simulation
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--green)"></div> Decoder / outputs / prediction
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--rose)"></div> Loss / learning signal
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--purple)"></div> Gradients (backprop)
+            </div>
+        </div>
+
+        <!-- ==================== STEP 1: DATA ==================== -->
+        <div class="section-title">Step 1 · Training Data</div>
+
+        <div class="training-grid">
+            <div class="card blue">
+                <div class="card-head">
+                    <div class="icon blue">📦</div>
+                    <div>
+                        <div class="label">SA-1B Sample</div>
+                        <div class="sublabel">Pick 1 image + 1 ground-truth mask</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul class="bullets blue">
+                        <li>11M images, 1.1B masks (~100 masks/image)</li>
+                        <li>Each training step picks <strong>one image</strong> and <strong>one GT mask</strong> for a
+                            single object/region</li>
+                    </ul>
+                    <div style="margin-top:12px">
+                        <span class="shape blue">Image: (3, 1024, 1024)</span><br>
+                        <span class="shape blue">GT mask: (1, 1024, 1024)</span>
+                    </div>
+                    <div class="note-text">GT = ground truth — a human-annotated or engine-generated binary mask</div>
+                </div>
+            </div>
+
+            <div class="card amber">
+                <div class="card-head">
+                    <div class="icon amber">🎯</div>
+                    <div>
+                        <div class="label">Simulate a Prompt</div>
+                        <div class="sublabel">No human clicks during training — prompts are derived from GT mask</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul class="bullets amber">
+                        <li><strong>Point:</strong> sample random (x, y) inside GT mask region. Label = foreground.</li>
+                        <li><strong>Box:</strong> compute tight bounding box around GT mask, add random jitter to
+                            corners.</li>
+                        <li><strong>Mask:</strong> use output logits from a <em>previous iteration</em> as coarse mask
+                            input (iterative refinement).</li>
+                    </ul>
+                    <div class="note-text">This teaches the model to respond to the same kinds of signals real users
+                        give at inference.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== STEP 2: ARCHITECTURE ==================== -->
+        <div class="connector">
+            <div class="v-arrow">
+                <div class="line"></div>
+                <div class="head"></div>
+            </div><span class="label">Feed into architecture</span>
+        </div>
+
+        <div class="section-title">Step 2 · Architecture (Three Components)</div>
+
+        <div class="arch-grid">
+            <!-- IMAGE ENCODER -->
+            <div class="card blue">
+                <div class="card-head">
+                    <div class="icon blue">🖼️</div>
+                    <div>
+                        <div class="label">(1) Image Encoder</div>
+                        <div class="sublabel">MAE-pretrained ViT · runs once per image</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dim-flow">
+                        <span class="d" style="border-color:rgba(96,165,250,.4)">(3, 1024, 1024)</span>
+                        <span class="arr">→</span>
+                        <span class="op">patch 16×16</span>
+                        <span class="arr">→</span>
+                        <span class="d">(4096, 768)</span>
+                        <span class="arr">→</span>
+                        <span class="op">ViT blocks</span>
+                        <span class="arr">→</span>
+                        <span class="d">(4096, 1280)</span>
+                        <span class="arr">→</span>
+                        <span class="op">reshape</span>
+                        <span class="arr">→</span>
+                        <span class="d">(1280, 64, 64)</span>
+                        <span class="arr">→</span>
+                        <span class="op">1×1 conv</span>
+                        <span class="arr">→</span>
+                        <span class="d" style="border-color:rgba(96,165,250,.6); color:var(--blue)">(256, 64, 64)</span>
+                    </div>
+                    <ul class="bullets blue">
+                        <li>Heaviest component (~632M params for ViT-H)</li>
+                        <li>All 4096 spatial tokens preserved (no CLS-only output)</li>
+                        <li>Output cached — prompt changes don't re-run this</li>
+                    </ul>
+                    <div class="note-text">MAE pretraining: mask 75% of patches → reconstruct → learns deep image
+                        understanding without labels.</div>
+                </div>
+            </div>
+
+            <!-- PROMPT ENCODER -->
+            <div class="card amber">
+                <div class="card-head">
+                    <div class="icon amber">📍</div>
+                    <div>
+                        <div class="label">(2) Prompt Encoder</div>
+                        <div class="sublabel">No transformer — just embeddings + convolutions</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p style="font-size:13px;color:#cbd5e1;font-weight:600;margin-bottom:10px">Sparse Branch (points +
+                        boxes):</p>
+                    <ul class="bullets amber">
+                        <li><strong>Point:</strong> (x,y) → positional encoding + type embedding → <span
+                                class="shape">256-d</span></li>
+                        <li><strong>Box:</strong> 2 corners → 2 tokens, each with distinct type embedding</li>
+                        <li>3 type embeddings total: foreground, background, box-corner</li>
+                    </ul>
+
+                    <p style="font-size:13px;color:#cbd5e1;font-weight:600;margin:14px 0 10px">Dense Branch (mask):</p>
+                    <div class="dim-flow">
+                        <span class="d">(1, 1024, 1024)</span>
+                        <span class="arr">→</span>
+                        <span class="op">Conv2D ×3</span>
+                        <span class="arr">→</span>
+                        <span class="d" style="border-color:rgba(251,191,36,.4); color:var(--amber)">(256, 64,
+                            64)</span>
+                    </div>
+
+                    <p style="font-size:13px;color:#cbd5e1;font-weight:600;margin:14px 0 10px">Output Tokens (like
+                        DETR's object queries):</p>
+                    <ul class="bullets amber">
+                        <li>3 mask tokens → become 3 output masks (multi-granularity)</li>
+                        <li>1 IoU token → becomes IoU confidence scores</li>
+                    </ul>
+                    <div style="margin-top:12px">
+                        <span class="shape amber">Sparse out: (N + 2M + 4, 256)</span><br>
+                        <span class="shape amber">Dense out: (256, 64, 64)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MASK DECODER -->
+            <div class="card green">
+                <div class="card-head">
+                    <div class="icon green">🎭</div>
+                    <div>
+                        <div class="label">(3) Mask Decoder</div>
+                        <div class="sublabel">Lightweight transformer · fast per prompt (~50ms CPU)</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p style="font-size:13px;color:#cbd5e1;font-weight:600;margin-bottom:10px">2× Bidirectional
+                        Cross-Attention Blocks:</p>
+                    <ul class="bullets green">
+                        <li><strong>Self-attention</strong> among token sequence</li>
+                        <li><strong>Token → Image</strong> cross-attention (Q=tokens, K/V=image)</li>
+                        <li><strong>Image → Token</strong> cross-attention (Q=image, K/V=tokens)</li>
+                        <li>+ one final token-to-image cross-attention</li>
+                    </ul>
+
+                    <p style="font-size:13px;color:#cbd5e1;font-weight:600;margin:14px 0 10px">Mask Generation:</p>
+                    <div class="dim-flow">
+                        <span class="d">3 mask tokens</span>
+                        <span class="arr">→</span>
+                        <span class="op">3× MLP</span>
+                        <span class="arr">→</span>
+                        <span class="d">3 × (256,)</span>
+                        <span class="arr">→</span>
+                        <span class="op">dot product w/ upscaled image</span>
+                        <span class="arr">→</span>
+                        <span class="d" style="border-color:rgba(52,211,153,.5); color:var(--green)">3 × (1, 1024,
+                            1024)</span>
+                    </div>
+                    <div class="dim-flow">
+                        <span class="d">Image feats (256, 64, 64)</span>
+                        <span class="arr">→</span>
+                        <span class="op">2× TransposeConv</span>
+                        <span class="arr">→</span>
+                        <span class="d">(256, 256, 256)</span>
+                    </div>
+                    <div class="dim-flow">
+                        <span class="d">IoU token</span>
+                        <span class="arr">→</span>
+                        <span class="op">MLP</span>
+                        <span class="arr">→</span>
+                        <span class="d" style="border-color:rgba(52,211,153,.5); color:var(--green)">3 IoU scores</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dense embedding note -->
+        <div class="callout-box">
+            <div class="callout-title">🔗 How components connect</div>
+            <p>
+                <strong>Dense mask embedding</strong> <span class="shape">(256, 64, 64)</span> is <strong>element-wise
+                    added</strong> to the image embedding <span class="shape">(256, 64, 64)</span> before entering the
+                decoder.
+                <strong>Sparse tokens</strong> <span class="shape">(N+4, 256)</span> enter the decoder as the token
+                sequence. The image embedding is flattened to <span class="shape">(4096, 256)</span> for attention.
+            </p>
+        </div>
+
+        <!-- ==================== STEP 3: OUTPUTS ==================== -->
+        <div class="connector">
+            <div class="v-arrow green">
+                <div class="line"></div>
+                <div class="head"></div>
+            </div><span class="label">Decoder outputs</span>
+        </div>
+
+        <div class="section-title">Step 3 · Outputs (3 Masks + IoU)</div>
+
+        <div class="card green">
+            <div class="card-head">
+                <div class="icon green">✨</div>
+                <div>
+                    <div class="label">3 Ambiguity-Level Masks + Confidence Scores</div>
+                    <div class="sublabel">Every forward pass produces all three — pick via IoU score or user intent
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px">
+                    <div
+                        style="text-align:center;padding:16px;border-radius:10px;background:rgba(2,6,23,.5);border:1px solid var(--line)">
+                        <div style="font-size:28px;margin-bottom:6px">🌍</div>
+                        <div style="font-size:13px;font-weight:700">Mask 0</div>
+                        <div style="font-size:12px;color:var(--muted)">Global (whole object)</div>
+                        <div class="shape green" style="margin-top:8px">(1, 1024, 1024)</div>
+                    </div>
+                    <div
+                        style="text-align:center;padding:16px;border-radius:10px;background:rgba(2,6,23,.5);border:1px solid var(--line)">
+                        <div style="font-size:28px;margin-bottom:6px">🔲</div>
+                        <div style="font-size:13px;font-weight:700">Mask 1</div>
+                        <div style="font-size:12px;color:var(--muted)">Sub-global (body part)</div>
+                        <div class="shape green" style="margin-top:8px">(1, 1024, 1024)</div>
+                    </div>
+                    <div
+                        style="text-align:center;padding:16px;border-radius:10px;background:rgba(2,6,23,.5);border:1px solid var(--line)">
+                        <div style="font-size:28px;margin-bottom:6px">🎯</div>
+                        <div style="font-size:13px;font-weight:700">Mask 2</div>
+                        <div style="font-size:12px;color:var(--muted)">Local (clicked region)</div>
+                        <div class="shape green" style="margin-top:8px">(1, 1024, 1024)</div>
+                    </div>
+                </div>
+                <div style="text-align:center">
+                    <span class="shape green">IoU scores: (3,)</span>
+                    <span style="font-size:12px;color:var(--muted);margin-left:8px">— predicted confidence for each
+                        mask</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== STEP 4: LOSS ==================== -->
+        <div class="connector">
+            <div class="v-arrow" style="--c:var(--rose)">
+                <div class="line" style="background:linear-gradient(180deg, var(--lineH), var(--rose))"></div>
+                <div class="head" style="border-top-color:var(--rose)"></div>
+            </div><span class="label">Compare to GT mask → compute loss</span>
+        </div>
+
+        <div class="section-title">Step 4 · Training Loss</div>
+
+        <div class="card rose">
+            <div class="card-head">
+                <div class="icon rose">📉</div>
+                <div>
+                    <div class="label">Choose-Best-Mask Loss</div>
+                    <div class="sublabel">Compare each of 3 masks to GT, backprop only through the best match</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="loss-eq">
+                    i* = argmin<sub>i∈{0,1,2}</sub> <span class="hl-rose">L</span>(P<sub>i</sub>, G)
+                </div>
+                <div class="note-text">This lets the 3 heads specialize (global / mid / local) instead of fighting each
+                    other. Only the best mask gets gradient signal.</div>
+            </div>
+        </div>
+
+        <div style="height:16px"></div>
+
+        <div class="training-grid">
+            <div class="card blue">
+                <div class="card-head">
+                    <div class="icon blue">🎯</div>
+                    <div>
+                        <div class="label">Mask Loss (pixel + overlap)</div>
+                        <div class="sublabel">Applied to the selected best mask only</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="loss-eq">
+                        <span class="hl-blue">L<sub>mask</sub></span> = 20 · <span
+                            class="hl-blue">L<sub>focal</sub></span> + 1 · <span class="hl-blue">L<sub>dice</sub></span>
+                    </div>
+                    <ul class="bullets blue">
+                        <li><strong>Focal loss:</strong> modified BCE that down-weights easy background pixels and
+                            up-weights hard boundary pixels. Fights the class imbalance problem (>95% pixels are
+                            background).</li>
+                        <li><strong>Dice loss:</strong> directly optimizes mask overlap.
+                            <code>1 - 2|P∩G| / (|P|+|G|)</code>. Rewards boundary quality.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card amber">
+                <div class="card-head">
+                    <div class="icon amber">📊</div>
+                    <div>
+                        <div class="label">IoU Prediction Loss (self-critique)</div>
+                        <div class="sublabel">Teaches the model to estimate its own mask quality</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="loss-eq">
+                        <span class="hl-amber">L<sub>iou</sub></span> = MSE( IoU<sub>pred</sub>[i*], <span
+                            class="hl-green">IoU<sub>actual</sub></span>(P<sub>i*</sub>, G) )
+                    </div>
+                    <ul class="bullets amber">
+                        <li>Actual IoU is computed on-the-fly: <code>|P∩G| / |P∪G|</code></li>
+                        <li>At inference, use predicted IoU to auto-select the best mask</li>
+                        <li>Makes SAM self-calibrating — it knows how good its own output is</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div style="height:16px"></div>
+
+        <div class="card rose">
+            <div class="card-body">
+                <div class="loss-eq" style="font-size:16px">
+                    <span class="hl-rose">L<sub>total</sub></span> = 20 · <span class="hl-blue">L<sub>focal</sub></span>
+                    + 1 · <span class="hl-blue">L<sub>dice</sub></span> + 1 · <span
+                        class="hl-amber">L<sub>iou</sub></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== BACKPROP ==================== -->
+        <div class="backprop-banner">
+            <div class="icon-lg">⟲</div>
+            <div class="text">
+                <strong>Gradients flow end-to-end</strong> through Mask Decoder → Prompt Encoder → Image Encoder.
+                Image encoder starts <strong>MAE-pretrained</strong> (fine-tuned with small LR). Prompt encoder and mask
+                decoder are <strong>trained from scratch</strong>.
+                The 4 learnable output tokens (3 mask + 1 IoU) are also learned from scratch.
+            </div>
+        </div>
+
+        <!-- ==================== ITERATIVE REFINEMENT ==================== -->
+        <div class="callout-box" style="margin-top:24px">
+            <div class="callout-title">🔄 Iterative Refinement (training trick)</div>
+            <p>
+                <strong>Pass 1:</strong> point/box prompt → predicted mask.
+                <strong>Pass 2:</strong> feed Pass 1's mask logits back as a <em>dense mask prompt</em> → refined mask.
+                Loss is computed on the <em>refined</em> mask. This teaches the model to take a rough mask and improve
+                it — critical for the semi-auto annotation stage.
+            </p>
+        </div>
+
+        <!-- ==================== WHY SECTION ==================== -->
+        <div style="height:24px"></div>
+        <div class="section-title">Design Decisions · Why?</div>
+
+        <div class="faq-grid">
+            <div class="faq-item open">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">1</span>
+                    Why prompts instead of fixed classes?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Classic segmentation hard-codes a <span class="k">label space</span> (cat/dog/…). SAM learns
+                        <code>f(image, prompt) → mask</code>, making it <span class="k">class-agnostic</span>. It
+                        doesn't need to know object names to draw boundaries — just "select this region."</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">2</span>
+                    Why 3 masks per click?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>One point is ambiguous. Clicking a bird's head could mean <span class="k">head</span>, <span
+                            class="k">body</span>, or <span class="k">entire bird</span>. Multi-mask output turns
+                        ambiguity from a bug into a feature. The "choose-best-mask" training rule lets heads specialize
+                        without averaging into mush.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">3</span>
+                    Why the IoU prediction head?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Users need to auto-select "the good mask." Training with <code>MSE(pred, actual)</code> makes SAM
+                        <span class="k">self-calibrating</span>. At inference: click → 3 masks → pick the highest
+                        predicted IoU. Instant, no human needed.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">4</span>
+                    Why MAE-pretrain the image encoder?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>MAE forces the ViT to understand images by reconstructing masked patches — strong general visual
+                        features without any labels. SAM fine-tunes this, getting <span class="k">world understanding +
+                            promptable masks</span> without labeling every object class.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">5</span>
+                    Why simulate prompts during training?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Human clicks are <span class="k">expensive and inconsistent</span>. Generating prompts from GT
+                        masks (sample points inside, derive boxes, feed rough masks) turns static mask data into
+                        interactive training examples. The model learns to respond to the same signals real users give.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">6</span>
+                    Why combine focal + dice loss?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Masks are extremely imbalanced (mostly background). <span class="k">Focal loss</span> prevents
+                        the trivial "predict all background" cheat. <span class="k">Dice loss</span> directly rewards
+                        overlap quality — what we actually care about visually. Together they cover per-pixel accuracy
+                        and global overlap.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">7</span>
+                    The mental model that makes SAM click
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Think of SAM as two cached worlds meeting in the decoder: <span class="k">World A</span> = image
+                        embedding (what's where — computed once). <span class="k">World B</span> = prompt tokens (what
+                        you mean — cheap to change). The decoder is the translator: "Given World A and what the user
+                        means, paint the pixels."</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
