@@ -27,9 +27,9 @@ import torch.nn as nn
 import torch.utils.data
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from einops import rearrange
-from tqdm import tqdm
-import timm
+from einops import rearrange # reshaping and permuting the tensors
+from tqdm import tqdm # bruh, you know it, its just a progress bar
+import timm # Torch IMage Models, it has bunch of pretrained models in there
 from PIL import Image
 
 

@@ -1,0 +1,1175 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>TimeSformer — Architecture + Training Flow</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #06080d;
+            --panel: #0d1117;
+            --card: #111827;
+            --ink: #e5e7eb;
+            --muted: #8b9dc3;
+            --line: #1e293b;
+            --lineH: #334155;
+            --blue: #60a5fa;
+            --blueGlow: rgba(96, 165, 250, .15);
+            --green: #34d399;
+            --greenGlow: rgba(52, 211, 153, .12);
+            --amber: #fbbf24;
+            --amberGlow: rgba(251, 191, 36, .12);
+            --rose: #fb7185;
+            --roseGlow: rgba(251, 113, 133, .12);
+            --purple: #a78bfa;
+            --purpleGlow: rgba(167, 139, 250, .12);
+            --cyan: #22d3ee;
+            --cyanGlow: rgba(34, 211, 238, .12);
+            --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+            --sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+            --radius: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--sans);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Ambient background ─────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 900px 500px at 20% 10%, rgba(96, 165, 250, .08), transparent),
+                radial-gradient(ellipse 700px 500px at 80% 70%, rgba(167, 139, 250, .06), transparent),
+                radial-gradient(ellipse 600px 400px at 50% 40%, rgba(251, 191, 36, .04), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Header ─────────────────────────────────────────── */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(6, 8, 13, .82);
+            backdrop-filter: blur(20px) saturate(1.4);
+        }
+
+        header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.3px;
+            background: linear-gradient(135deg, #e2e8f0 0%, var(--purple) 50%, var(--blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header .sub {
+            margin-top: 6px;
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.5;
+            max-width: 900px;
+        }
+
+        .pill {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border: 1px solid var(--lineH);
+            border-radius: 999px;
+            color: #cbd5e1;
+            vertical-align: middle;
+        }
+
+        /* ── Flow pipeline indicator ─────────────────────────── */
+        .pipeline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pipeline .step {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: rgba(17, 24, 39, .6);
+            color: #94a3b8;
+            transition: all .3s;
+        }
+
+        .pipeline .step:hover {
+            border-color: var(--purple);
+            color: var(--purple);
+        }
+
+        .pipeline .arrow-sep {
+            color: #475569;
+            font-size: 14px;
+        }
+
+        /* ── Main layout ─────────────────────────────────────── */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            padding: 24px 32px;
+            max-width: 1500px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── Section titles ──────────────────────────────────── */
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--line), transparent);
+        }
+
+        /* ── Card system ──────────────────────────────────────── */
+        .card {
+            background: rgba(13, 17, 23, .7);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            transition: border-color .3s, box-shadow .3s;
+        }
+
+        .card:hover {
+            border-color: var(--lineH);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, .25);
+        }
+
+        .card.blue { border-color: rgba(96, 165, 250, .25); }
+        .card.blue:hover { border-color: rgba(96, 165, 250, .5); box-shadow: 0 8px 40px rgba(96, 165, 250, .08); }
+        .card.green { border-color: rgba(52, 211, 153, .25); }
+        .card.green:hover { border-color: rgba(52, 211, 153, .5); box-shadow: 0 8px 40px rgba(52, 211, 153, .08); }
+        .card.amber { border-color: rgba(251, 191, 36, .25); }
+        .card.amber:hover { border-color: rgba(251, 191, 36, .5); box-shadow: 0 8px 40px rgba(251, 191, 36, .08); }
+        .card.rose { border-color: rgba(251, 113, 133, .25); }
+        .card.rose:hover { border-color: rgba(251, 113, 133, .5); box-shadow: 0 8px 40px rgba(251, 113, 133, .08); }
+        .card.purple { border-color: rgba(167, 139, 250, .25); }
+        .card.purple:hover { border-color: rgba(167, 139, 250, .5); box-shadow: 0 8px 40px rgba(167, 139, 250, .08); }
+        .card.cyan { border-color: rgba(34, 211, 238, .25); }
+        .card.cyan:hover { border-color: rgba(34, 211, 238, .5); box-shadow: 0 8px 40px rgba(34, 211, 238, .08); }
+
+        .card-head {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-head .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .card-head .icon.blue { background: var(--blueGlow); border: 1px solid rgba(96, 165, 250, .3); }
+        .card-head .icon.green { background: var(--greenGlow); border: 1px solid rgba(52, 211, 153, .3); }
+        .card-head .icon.amber { background: var(--amberGlow); border: 1px solid rgba(251, 191, 36, .3); }
+        .card-head .icon.rose { background: var(--roseGlow); border: 1px solid rgba(251, 113, 133, .3); }
+        .card-head .icon.purple { background: var(--purpleGlow); border: 1px solid rgba(167, 139, 250, .3); }
+        .card-head .icon.cyan { background: var(--cyanGlow); border: 1px solid rgba(34, 211, 238, .3); }
+
+        .card-head .label {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -.2px;
+        }
+
+        .card-head .sublabel {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* ── Architecture grid ───────────────────────────────── */
+        .arch-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        /* ── Shape badge ─────────────────────────────────────── */
+        .shape {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 6px;
+            background: rgba(2, 6, 23, .7);
+            border: 1px solid var(--line);
+            color: #e2e8f0;
+            margin: 2px 0;
+        }
+
+        .shape.blue { border-color: rgba(96, 165, 250, .4); color: var(--blue); }
+        .shape.green { border-color: rgba(52, 211, 153, .4); color: var(--green); }
+        .shape.amber { border-color: rgba(251, 191, 36, .4); color: var(--amber); }
+        .shape.rose { border-color: rgba(251, 113, 133, .4); color: var(--rose); }
+        .shape.purple { border-color: rgba(167, 139, 250, .4); color: var(--purple); }
+        .shape.cyan { border-color: rgba(34, 211, 238, .4); color: var(--cyan); }
+
+        /* ── Dimension flow ──────────────────────────────────── */
+        .dim-flow {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+            padding: 14px 16px;
+            background: rgba(2, 6, 23, .5);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+        }
+
+        .dim-flow .d {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(17, 24, 39, .9);
+            border: 1px solid var(--lineH);
+            color: #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .dim-flow .op {
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .dim-flow .arr {
+            color: #475569;
+            font-size: 16px;
+        }
+
+        /* ── Bullet list ─────────────────────────────────────── */
+        .bullets {
+            list-style: none;
+            padding: 0;
+        }
+
+        .bullets li {
+            position: relative;
+            padding-left: 18px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .bullets li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 7px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--lineH);
+        }
+
+        .bullets.blue li::before { background: var(--blue); }
+        .bullets.green li::before { background: var(--green); }
+        .bullets.amber li::before { background: var(--amber); }
+        .bullets.rose li::before { background: var(--rose); }
+        .bullets.purple li::before { background: var(--purple); }
+        .bullets.cyan li::before { background: var(--cyan); }
+
+        .note-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 10px;
+            padding: 10px 14px;
+            border-left: 2px solid var(--lineH);
+            background: rgba(2, 6, 23, .4);
+            border-radius: 0 8px 8px 0;
+            line-height: 1.5;
+        }
+
+        /* ── Connection arrows (CSS-drawn) ───────────────────── */
+        .connector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .connector .v-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .connector .v-arrow .line {
+            width: 2px;
+            height: 28px;
+            background: linear-gradient(180deg, var(--lineH), var(--blue));
+        }
+
+        .connector .v-arrow .head {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid var(--blue);
+        }
+
+        .connector .v-arrow.purple .line { background: linear-gradient(180deg, var(--lineH), var(--purple)); }
+        .connector .v-arrow.purple .head { border-top-color: var(--purple); }
+        .connector .v-arrow.green .line { background: linear-gradient(180deg, var(--lineH), var(--green)); }
+        .connector .v-arrow.green .head { border-top-color: var(--green); }
+        .connector .v-arrow.amber .line { background: linear-gradient(180deg, var(--lineH), var(--amber)); }
+        .connector .v-arrow.amber .head { border-top-color: var(--amber); }
+
+        .connector .label {
+            font-size: 11px;
+            color: var(--muted);
+            margin-left: 10px;
+            font-weight: 500;
+        }
+
+        /* ── Training section ────────────────────────────────── */
+        .training-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .loss-eq {
+            font-family: var(--mono);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 16px 20px;
+            border-radius: 10px;
+            background: rgba(2, 6, 23, .6);
+            border: 1px solid var(--line);
+            text-align: center;
+            letter-spacing: .5px;
+            margin: 12px 0;
+        }
+
+        .loss-eq .hl-blue { color: var(--blue); }
+        .loss-eq .hl-amber { color: var(--amber); }
+        .loss-eq .hl-green { color: var(--green); }
+        .loss-eq .hl-rose { color: var(--rose); }
+        .loss-eq .hl-purple { color: var(--purple); }
+
+        /* ── Why section (FAQ accordion) ─────────────────────── */
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .faq-item {
+            background: rgba(13, 17, 23, .6);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color .3s;
+        }
+
+        .faq-item:hover { border-color: var(--lineH); }
+
+        .faq-q {
+            padding: 14px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+            transition: color .3s;
+        }
+
+        .faq-q:hover { color: var(--purple); }
+
+        .faq-q .num {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(167, 139, 250, .1);
+            border: 1px solid rgba(167, 139, 250, .25);
+            color: var(--purple);
+            flex-shrink: 0;
+        }
+
+        .faq-q .chevron {
+            margin-left: auto;
+            transition: transform .3s;
+            color: #475569;
+            font-size: 16px;
+        }
+
+        .faq-item.open .faq-q .chevron { transform: rotate(180deg); }
+
+        .faq-a {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height .4s ease, padding .3s;
+        }
+
+        .faq-item.open .faq-a {
+            max-height: 400px;
+            padding: 0 18px 16px;
+        }
+
+        .faq-a p {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .faq-a p .k {
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        /* ── Backprop banner ──────────────────────────────────── */
+        .backprop-banner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(167, 139, 250, .06), rgba(96, 165, 250, .06));
+            border: 1px solid rgba(167, 139, 250, .2);
+            margin-top: 20px;
+        }
+
+        .backprop-banner .icon-lg {
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .backprop-banner .text {
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .backprop-banner .text strong { color: var(--purple); }
+
+        /* ── Legend ───────────────────────────────────────────── */
+        .legend {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            padding: 16px 20px;
+            background: rgba(2, 6, 23, .5);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ── Callout box ──────────────────────────────────────── */
+        .callout-box {
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 1px dashed var(--lineH);
+            background: rgba(2, 6, 23, .4);
+            margin-top: 16px;
+        }
+
+        .callout-box .callout-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--amber);
+            margin-bottom: 6px;
+        }
+
+        .callout-box p {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        /* ── Complexity table ─────────────────────────────────── */
+        .complexity-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin: 12px 0;
+        }
+
+        .complexity-table th {
+            text-align: left;
+            font-weight: 600;
+            color: var(--muted);
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--lineH);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .complexity-table td {
+            padding: 8px 12px;
+            color: #cbd5e1;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .complexity-table tr:last-child td { border-bottom: none; }
+
+        .complexity-table .highlight {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: 12px;
+            background: rgba(2, 6, 23, .7);
+            padding: 2px 7px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            color: #e2e8f0;
+        }
+
+        @media (max-width: 900px) {
+            .arch-grid { grid-template-columns: 1fr; }
+            .training-grid { grid-template-columns: 1fr; }
+            .faq-grid { grid-template-columns: 1fr; }
+            header { padding: 16px 20px; }
+            .main { padding: 16px 20px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>TimeSformer — Time-Space Transformer</h1>
+        <p class="sub">Architecture + training flow with tensor shapes. How a video becomes an action class, from frame
+            sampling through divided space-time attention to classification.</p>
+        <div class="pipeline">
+            <span class="step">🎬 Sample frames</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🧩 Patch embed</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">📐 Position embed</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🕐 Temporal attn</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🗺️ Spatial attn</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">×12 blocks</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🏷️ CLS → class</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">📉 Loss</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">⟲ Backprop</span>
+        </div>
+    </header>
+
+    <div class="main">
+
+        <!-- ==================== LEGEND ==================== -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--blue)"></div> Video / frame data
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--purple)"></div> Temporal attention stream
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--cyan)"></div> Spatial attention stream
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--green)"></div> Classification / output
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--rose)"></div> Loss / learning signal
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--amber)"></div> Position embeddings
+            </div>
+        </div>
+
+        <!-- ==================== STEP 1: INPUT DATA ==================== -->
+        <div class="section-title">Step 1 · Video Input</div>
+
+        <div class="training-grid">
+            <div class="card blue">
+                <div class="card-head">
+                    <div class="icon blue">🎬</div>
+                    <div>
+                        <div class="label">Video Frame Sampling</div>
+                        <div class="sublabel">Extract T uniformly-spaced frames from the video</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul class="bullets blue">
+                        <li>Input video → uniformly sample <strong>T = 8</strong> frames</li>
+                        <li>Each frame resized to <strong>224 × 224</strong> pixels</li>
+                        <li>Dataset: subset of <strong>Kinetics-400</strong> (~400 human action classes)</li>
+                    </ul>
+                    <div style="margin-top:12px">
+                        <span class="shape blue">Video tensor: (B, 8, 3, 224, 224)</span>
+                    </div>
+                    <div class="note-text">B = batch size, T = 8 frames, C = 3 RGB channels, H = W = 224 pixels</div>
+                </div>
+            </div>
+
+            <div class="card amber">
+                <div class="card-head">
+                    <div class="icon amber">📐</div>
+                    <div>
+                        <div class="label">Token Counts</div>
+                        <div class="sublabel">How many tokens the model processes</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul class="bullets amber">
+                        <li><strong>Spatial tokens per frame:</strong> N = (224/16)² = <strong>196</strong></li>
+                        <li><strong>Temporal tokens:</strong> T = <strong>8</strong> (one per frame)</li>
+                        <li><strong>Total tokens:</strong> N × T + 1 = <strong>1,569</strong> (+ CLS token)</li>
+                    </ul>
+                    <div style="margin-top:12px">
+                        <span class="shape amber">Token grid: (B, T+1, N, D) = (B, 9, 196, 768)</span>
+                    </div>
+                    <div class="note-text">CLS token acts as "frame 0" — summarizes the entire video for classification
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== STEP 2: PATCH + POS EMBEDDING ==================== -->
+        <div class="connector">
+            <div class="v-arrow">
+                <div class="line"></div>
+                <div class="head"></div>
+            </div><span class="label">Patchify & embed each frame</span>
+        </div>
+
+        <div class="section-title">Step 2 · Patch Embedding + Position Encoding</div>
+
+        <div class="card blue">
+            <div class="card-head">
+                <div class="icon blue">🧩</div>
+                <div>
+                    <div class="label">Patch Embedding (Conv2D)</div>
+                    <div class="sublabel">Non-overlapping 16×16 patches → 768-dim token vectors</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="dim-flow">
+                    <span class="d" style="border-color:rgba(96,165,250,.4)">(B×8, 3, 224, 224)</span>
+                    <span class="arr">→</span>
+                    <span class="op">Conv2D(3, 768, k=16, s=16)</span>
+                    <span class="arr">→</span>
+                    <span class="d">(B×8, 768, 14, 14)</span>
+                    <span class="arr">→</span>
+                    <span class="op">flatten + transpose</span>
+                    <span class="arr">→</span>
+                    <span class="d">(B×8, 196, 768)</span>
+                    <span class="arr">→</span>
+                    <span class="op">reshape</span>
+                    <span class="arr">→</span>
+                    <span class="d" style="border-color:rgba(96,165,250,.6); color:var(--blue)">(B, 8, 196, 768)</span>
+                </div>
+                <ul class="bullets blue">
+                    <li>Conv2D with kernel = stride = 16 → non-overlapping patch extraction</li>
+                    <li>Each 16×16×3 patch becomes a single 768-dim embedding vector</li>
+                    <li>Merge B and T for the convolution, then restore temporal dimension</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="training-grid">
+            <div class="card amber">
+                <div class="card-head">
+                    <div class="icon amber">⏱️</div>
+                    <div>
+                        <div class="label">Temporal Position Embedding</div>
+                        <div class="sublabel">Learnable PE along the frame axis (T+1 positions)</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="margin-bottom:8px">
+                        <span class="shape amber">time_embed: (1, T+1, 1, 768)</span>
+                    </div>
+                    <ul class="bullets amber">
+                        <li>Index 0 reserved for CLS token</li>
+                        <li>Indices 1–T for actual frames</li>
+                        <li>Broadcast across batch and spatial dimensions</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card amber">
+                <div class="card-head">
+                    <div class="icon amber">📍</div>
+                    <div>
+                        <div class="label">Spatial Position Embedding</div>
+                        <div class="sublabel">Learnable PE along the patch axis (N positions)</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="margin-bottom:8px">
+                        <span class="shape amber">space_embed: (1, 1, 196, 768)</span>
+                    </div>
+                    <ul class="bullets amber">
+                        <li>Same PE shared across all frames (spatial structure is the same)</li>
+                        <li>Added element-wise to patch tokens</li>
+                        <li>Spatial + temporal PE combined: <code>x + time_PE + space_PE</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout-box">
+            <div class="callout-title">🔗 CLS Token Prepending</div>
+            <p>
+                After adding position embeddings to frames 1–T, the <strong>CLS token</strong>
+                <span class="shape">(1, 1, 196, 768)</span> is prepended as "frame 0" with its own temporal PE
+                (index 0 from <code>time_embed</code>). Final shape:
+                <span class="shape blue">(B, T+1, N, D) = (B, 9, 196, 768)</span>
+            </p>
+        </div>
+
+        <!-- ==================== STEP 3: DIVIDED ATTENTION ==================== -->
+        <div class="connector">
+            <div class="v-arrow purple">
+                <div class="line"></div>
+                <div class="head"></div>
+            </div><span class="label">Feed into ×12 transformer blocks</span>
+        </div>
+
+        <div class="section-title">Step 3 · Divided Space-Time Attention Block (×12)</div>
+
+        <div class="arch-grid">
+            <!-- TEMPORAL ATTENTION -->
+            <div class="card purple">
+                <div class="card-head">
+                    <div class="icon purple">🕐</div>
+                    <div>
+                        <div class="label">(1) Temporal Attention</div>
+                        <div class="sublabel">Same patch, across all frames</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dim-flow">
+                        <span class="d">(B, T+1, N, D)</span>
+                        <span class="arr">→</span>
+                        <span class="op">rearrange</span>
+                        <span class="arr">→</span>
+                        <span class="d" style="border-color:rgba(167,139,250,.4); color:var(--purple)">(B×N, T+1,
+                            D)</span>
+                    </div>
+                    <ul class="bullets purple">
+                        <li>Merge batch + spatial dims → each "sequence" is <strong>T+1 frames</strong> of the same
+                            patch</li>
+                        <li><strong>Q, K, V</strong> all from temporal rearrangement (self-attention)</li>
+                        <li>Each patch learns how it changes over time</li>
+                        <li>Separate <code>W_Q, W_K, W_V</code> from spatial attention</li>
+                    </ul>
+                    <div class="dim-flow">
+                        <span class="d">(B×N, T+1, D)</span>
+                        <span class="arr">→</span>
+                        <span class="op">MHA</span>
+                        <span class="arr">→</span>
+                        <span class="d">(B×N, T+1, D)</span>
+                        <span class="arr">→</span>
+                        <span class="op">rearrange back</span>
+                        <span class="arr">→</span>
+                        <span class="d">(B, T+1, N, D)</span>
+                    </div>
+                    <div class="note-text">+ residual connection + LayerNorm after attention</div>
+                </div>
+            </div>
+
+            <!-- SPATIAL ATTENTION -->
+            <div class="card cyan">
+                <div class="card-head">
+                    <div class="icon cyan">🗺️</div>
+                    <div>
+                        <div class="label">(2) Spatial Attention</div>
+                        <div class="sublabel">Same frame, across all patches</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dim-flow">
+                        <span class="d">(B, T+1, N, D)</span>
+                        <span class="arr">→</span>
+                        <span class="op">rearrange</span>
+                        <span class="arr">→</span>
+                        <span class="d" style="border-color:rgba(34,211,238,.4); color:var(--cyan)">(B×(T+1), N,
+                            D)</span>
+                    </div>
+                    <ul class="bullets cyan">
+                        <li>Merge batch + temporal dims → each "sequence" is <strong>N patches</strong> within one frame
+                        </li>
+                        <li><strong>Q, K, V</strong> all from spatial rearrangement (self-attention)</li>
+                        <li>Each patch learns its context relative to other patches in the same frame</li>
+                        <li>Separate <code>W_Q, W_K, W_V</code> from temporal attention</li>
+                    </ul>
+                    <div class="dim-flow">
+                        <span class="d">(B×(T+1), N, D)</span>
+                        <span class="arr">→</span>
+                        <span class="op">MHA</span>
+                        <span class="arr">→</span>
+                        <span class="d">(B×(T+1), N, D)</span>
+                        <span class="arr">→</span>
+                        <span class="op">rearrange back</span>
+                        <span class="arr">→</span>
+                        <span class="d">(B, T+1, N, D)</span>
+                    </div>
+                    <div class="note-text">+ residual connection + LayerNorm after attention</div>
+                </div>
+            </div>
+
+            <!-- MLP -->
+            <div class="card green">
+                <div class="card-head">
+                    <div class="icon green">⚡</div>
+                    <div>
+                        <div class="label">(3) Feed-Forward MLP</div>
+                        <div class="sublabel">Per-token nonlinear projection</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dim-flow">
+                        <span class="d">(B, T+1, N, 768)</span>
+                        <span class="arr">→</span>
+                        <span class="op">Linear(768, 3072)</span>
+                        <span class="arr">→</span>
+                        <span class="op">GELU</span>
+                        <span class="arr">→</span>
+                        <span class="op">Linear(3072, 768)</span>
+                        <span class="arr">→</span>
+                        <span class="d" style="border-color:rgba(52,211,153,.4); color:var(--green)">(B, T+1, N,
+                            768)</span>
+                    </div>
+                    <ul class="bullets green">
+                        <li>Expand to 4× hidden dim then project back</li>
+                        <li>Applied independently to every token</li>
+                        <li>GELU activation instead of ReLU</li>
+                    </ul>
+                    <div class="note-text">+ residual connection + LayerNorm after MLP. This completes one block — repeat
+                        ×12.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Complexity callout -->
+        <div class="callout-box">
+            <div class="callout-title">📊 Complexity: Divided vs Joint Attention</div>
+            <p style="margin-bottom:12px">Dividing attention into temporal + spatial steps is the key efficiency win.
+                N = patches/frame, F = frames.</p>
+            <table class="complexity-table">
+                <tr>
+                    <th>Method</th>
+                    <th>Per-Token Complexity</th>
+                    <th>Total Complexity</th>
+                </tr>
+                <tr>
+                    <td>Joint Space-Time</td>
+                    <td><code>O(NF)</code></td>
+                    <td><code>O(N²F²)</code></td>
+                </tr>
+                <tr>
+                    <td class="highlight">Divided Space-Time (T+S)</td>
+                    <td class="highlight"><code>O(N + F)</code></td>
+                    <td class="highlight"><code>O(N²F + NF²)</code></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- ==================== STEP 4: CLASSIFICATION ==================== -->
+        <div class="connector">
+            <div class="v-arrow green">
+                <div class="line"></div>
+                <div class="head"></div>
+            </div><span class="label">Extract CLS token → classify</span>
+        </div>
+
+        <div class="section-title">Step 4 · Classification Head</div>
+
+        <div class="card green">
+            <div class="card-head">
+                <div class="icon green">🏷️</div>
+                <div>
+                    <div class="label">CLS Token → Action Class</div>
+                    <div class="sublabel">Video-level representation → class logits</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="dim-flow">
+                    <span class="d">(B, T+1, N, 768)</span>
+                    <span class="arr">→</span>
+                    <span class="op">extract x[:, 0, 0]</span>
+                    <span class="arr">→</span>
+                    <span class="d">(B, 768)</span>
+                    <span class="arr">→</span>
+                    <span class="op">LayerNorm</span>
+                    <span class="arr">→</span>
+                    <span class="op">Linear(768, num_classes)</span>
+                    <span class="arr">→</span>
+                    <span class="d" style="border-color:rgba(52,211,153,.5); color:var(--green)">(B, num_classes)</span>
+                </div>
+                <ul class="bullets green">
+                    <li>CLS token is at <strong>temporal position 0, spatial position 0</strong></li>
+                    <li>After 12 blocks of temporal + spatial attention, CLS has aggregated information from all patches
+                        across all frames</li>
+                    <li>Single linear layer maps to class logits (e.g., 2 classes for bench press vs. deadlift)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ==================== STEP 5: LOSS ==================== -->
+        <div class="connector">
+            <div class="v-arrow" style="--c:var(--rose)">
+                <div class="line" style="background:linear-gradient(180deg, var(--lineH), var(--rose))"></div>
+                <div class="head" style="border-top-color:var(--rose)"></div>
+            </div><span class="label">Compare to ground-truth label → compute loss</span>
+        </div>
+
+        <div class="section-title">Step 5 · Training Loss</div>
+
+        <div class="training-grid">
+            <div class="card rose">
+                <div class="card-head">
+                    <div class="icon rose">📉</div>
+                    <div>
+                        <div class="label">Cross-Entropy Loss</div>
+                        <div class="sublabel">Standard classification objective</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="loss-eq">
+                        <span class="hl-rose">L</span> = −∑<sub>c</sub> y<sub>c</sub> log(p<sub>c</sub>)
+                    </div>
+                    <ul class="bullets rose">
+                        <li>y = one-hot ground truth label, p = softmax predictions</li>
+                        <li>Penalizes high confidence in the wrong class</li>
+                        <li>Standard for multi-class classification tasks</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card amber">
+                <div class="card-head">
+                    <div class="icon amber">⚙️</div>
+                    <div>
+                        <div class="label">Training Configuration</div>
+                        <div class="sublabel">Optimizer and hyperparameters</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul class="bullets amber">
+                        <li><strong>Optimizer:</strong> AdamW with small learning rate</li>
+                        <li><strong>Backbone:</strong> ViT-Base/16 pretrained weights from <code>timm</code></li>
+                        <li><strong>Frames:</strong> 8 (more frames → more memory, diminishing returns)</li>
+                        <li><strong>Batch size:</strong> 2 (limited dataset — ~80 training videos)</li>
+                        <li><strong>Results:</strong> ~80% at 10 epochs, ~90–92% at 30 epochs</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== BACKPROP ==================== -->
+        <div class="backprop-banner">
+            <div class="icon-lg">⟲</div>
+            <div class="text">
+                <strong>Gradients flow end-to-end</strong> through Classification Head → 12 Transformer Blocks → Patch
+                Embedding.
+                Spatial attention weights are <strong>initialized from pretrained ViT-Base</strong>. Temporal attention
+                weights
+                are initialized from the same spatial weights (duplicated). Position embeddings and CLS token are
+                <strong>learned from scratch</strong>.
+            </div>
+        </div>
+
+        <!-- ==================== WEIGHT LOADING ==================== -->
+        <div class="callout-box" style="margin-top:24px">
+            <div class="callout-title">🔄 Pretrained ViT Weight Loading</div>
+            <p>
+                <strong>Spatial attention</strong> weights (Q, K, V projections, MLP) are copied directly from
+                ViT-Base/16.
+                <strong>Temporal attention</strong> weights are initialized from the same spatial weights — a form of
+                "weight cloning" that gives temporal attention a strong starting point. The patch embedding and
+                classification head are also transferred where dimensions match.
+            </p>
+        </div>
+
+        <!-- ==================== WHY SECTION ==================== -->
+        <div style="height:24px"></div>
+        <div class="section-title">Design Decisions · Why?</div>
+
+        <div class="faq-grid">
+            <div class="faq-item open">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">1</span>
+                    Why divide attention into temporal + spatial?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Joint space-time attention has <span class="k">O(N²F²)</span> complexity — quadratic in both
+                        patches and frames. Divided attention reduces this to <span class="k">O(N²F + NF²)</span> by
+                        attending across time and space separately. This makes longer videos and higher resolutions
+                        feasible. Joint attention goes OOM at ~96 frames; divided stays tractable.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">2</span>
+                    Why does divided beat joint despite seeing less context?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Divided attention has <span class="k">separate learnable parameters</span> for temporal and
+                        spatial attention (2× the Q, K, V projections). Joint uses one shared set for everything. The
+                        specialization — temporal heads learn motion, spatial heads learn appearance — more than
+                        compensates for the reduced attention window. Paper result: <span class="k">78.0% vs
+                            77.4%</span> top-1 on Kinetics-400.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">3</span>
+                    Why use separate position embeddings for space and time?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Spatial and temporal structure are fundamentally different. <span class="k">Spatial PE</span>
+                        encodes where a patch is in the 14×14 grid — the same across all frames. <span
+                            class="k">Temporal PE</span> encodes which frame it is — the same for all patches within a
+                        frame. Separating them gives the model clearer positional signals than a single flattened PE
+                        would.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">4</span>
+                    Why only 8 frames?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Memory scales linearly with frames, and attention scales quadratically (even divided). At 8
+                        frames, the total token count is <span class="k">1,569</span>. At 32 frames it becomes <span
+                            class="k">6,273</span> — approaching GPU memory limits. The paper shows diminishing accuracy
+                        gains beyond 8–16 frames for most Kinetics actions, which are short (~8–10s) clips.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">5</span>
+                    Why initialize temporal weights from spatial?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>ViT was pretrained on images — it has no temporal weights. Instead of random initialization,
+                        <span class="k">cloning spatial weights into temporal</span> gives the temporal branch a strong
+                        starting point: general feature extraction patterns. During finetuning, temporal weights diverge
+                        to specialize in motion patterns while spatial weights stay closer to the original ViT.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">6</span>
+                    The mental model that makes TimeSformer click
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Think of each patch as living in a <span class="k">space-time grid</span>. Temporal attention
+                        lets patch (3, 7) — row 3, col 7 — "talk" to itself across all 8 frames ("am I moving?").
+                        Spatial attention lets it talk to all 196 patches in the same frame ("what's around me?"). After
+                        12 rounds of both, the CLS token has a complete picture of what happened where and when.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

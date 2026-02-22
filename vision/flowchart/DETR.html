@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>DETR — Architecture + Training Flow</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #06080d;
+            --panel: #0d1117;
+            --card: #111827;
+            --ink: #e5e7eb;
+            --muted: #8b9dc3;
+            --line: #1e293b;
+            --lineH: #334155;
+            --blue: #60a5fa;
+            --blueGlow: rgba(96, 165, 250, .15);
+            --green: #34d399;
+            --greenGlow: rgba(52, 211, 153, .12);
+            --amber: #fbbf24;
+            --amberGlow: rgba(251, 191, 36, .12);
+            --rose: #fb7185;
+            --roseGlow: rgba(251, 113, 133, .12);
+            --purple: #a78bfa;
+            --purpleGlow: rgba(167, 139, 250, .12);
+            --cyan: #22d3ee;
+            --cyanGlow: rgba(34, 211, 238, .12);
+            --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+            --sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+            --radius: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--sans);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 900px 500px at 20% 10%, rgba(96, 165, 250, .08), transparent),
+                radial-gradient(ellipse 700px 500px at 80% 70%, rgba(251, 191, 36, .06), transparent),
+                radial-gradient(ellipse 600px 400px at 50% 40%, rgba(52, 211, 153, .04), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(6, 8, 13, .82);
+            backdrop-filter: blur(20px) saturate(1.4);
+        }
+
+        header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -.3px;
+            background: linear-gradient(135deg, #e2e8f0 0%, var(--blue) 50%, var(--amber) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header .sub {
+            margin-top: 6px;
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.5;
+            max-width: 900px;
+        }
+
+        .pill {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border: 1px solid var(--lineH);
+            border-radius: 999px;
+            color: #cbd5e1;
+            vertical-align: middle;
+        }
+
+        .pipeline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pipeline .step {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: rgba(17, 24, 39, .6);
+            color: #94a3b8;
+            transition: all .3s;
+        }
+
+        .pipeline .step:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+
+        .pipeline .arrow-sep {
+            color: #475569;
+            font-size: 14px;
+        }
+
+        .main {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            padding: 24px 32px;
+            max-width: 1500px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--line), transparent);
+        }
+
+        .card {
+            background: rgba(13, 17, 23, .7);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            transition: border-color .3s, box-shadow .3s;
+        }
+
+        .card:hover {
+            border-color: var(--lineH);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, .25);
+        }
+
+        .card.blue { border-color: rgba(96, 165, 250, .25); }
+        .card.blue:hover { border-color: rgba(96, 165, 250, .5); box-shadow: 0 8px 40px rgba(96, 165, 250, .08); }
+        .card.green { border-color: rgba(52, 211, 153, .25); }
+        .card.green:hover { border-color: rgba(52, 211, 153, .5); box-shadow: 0 8px 40px rgba(52, 211, 153, .08); }
+        .card.amber { border-color: rgba(251, 191, 36, .25); }
+        .card.amber:hover { border-color: rgba(251, 191, 36, .5); box-shadow: 0 8px 40px rgba(251, 191, 36, .08); }
+        .card.rose { border-color: rgba(251, 113, 133, .25); }
+        .card.rose:hover { border-color: rgba(251, 113, 133, .5); box-shadow: 0 8px 40px rgba(251, 113, 133, .08); }
+        .card.purple { border-color: rgba(167, 139, 250, .25); }
+        .card.purple:hover { border-color: rgba(167, 139, 250, .5); box-shadow: 0 8px 40px rgba(167, 139, 250, .08); }
+        .card.cyan { border-color: rgba(34, 211, 238, .25); }
+        .card.cyan:hover { border-color: rgba(34, 211, 238, .5); box-shadow: 0 8px 40px rgba(34, 211, 238, .08); }
+
+        .card-head {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-head .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .card-head .icon.blue { background: var(--blueGlow); border: 1px solid rgba(96, 165, 250, .3); }
+        .card-head .icon.green { background: var(--greenGlow); border: 1px solid rgba(52, 211, 153, .3); }
+        .card-head .icon.amber { background: var(--amberGlow); border: 1px solid rgba(251, 191, 36, .3); }
+        .card-head .icon.rose { background: var(--roseGlow); border: 1px solid rgba(251, 113, 133, .3); }
+        .card-head .icon.purple { background: var(--purpleGlow); border: 1px solid rgba(167, 139, 250, .3); }
+        .card-head .icon.cyan { background: var(--cyanGlow); border: 1px solid rgba(34, 211, 238, .3); }
+
+        .card-head .label {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -.2px;
+        }
+
+        .card-head .sublabel {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .card-body { padding: 20px; }
+
+        .arch-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .arch-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .shape {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 6px;
+            background: rgba(2, 6, 23, .7);
+            border: 1px solid var(--line);
+            color: #e2e8f0;
+            margin: 2px 0;
+        }
+
+        .shape.blue { border-color: rgba(96, 165, 250, .4); color: var(--blue); }
+        .shape.green { border-color: rgba(52, 211, 153, .4); color: var(--green); }
+        .shape.amber { border-color: rgba(251, 191, 36, .4); color: var(--amber); }
+        .shape.rose { border-color: rgba(251, 113, 133, .4); color: var(--rose); }
+        .shape.purple { border-color: rgba(167, 139, 250, .4); color: var(--purple); }
+        .shape.cyan { border-color: rgba(34, 211, 238, .4); color: var(--cyan); }
+
+        .dim-flow {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+            padding: 14px 16px;
+            background: rgba(2, 6, 23, .5);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+        }
+
+        .dim-flow .d {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(17, 24, 39, .9);
+            border: 1px solid var(--lineH);
+            color: #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .dim-flow .op {
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .dim-flow .arr {
+            color: #475569;
+            font-size: 16px;
+        }
+
+        .bullets {
+            list-style: none;
+            padding: 0;
+        }
+
+        .bullets li {
+            position: relative;
+            padding-left: 18px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .bullets li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 7px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--lineH);
+        }
+
+        .bullets.blue li::before { background: var(--blue); }
+        .bullets.green li::before { background: var(--green); }
+        .bullets.amber li::before { background: var(--amber); }
+        .bullets.rose li::before { background: var(--rose); }
+        .bullets.purple li::before { background: var(--purple); }
+        .bullets.cyan li::before { background: var(--cyan); }
+
+        .note-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 10px;
+            padding: 10px 14px;
+            border-left: 2px solid var(--lineH);
+            background: rgba(2, 6, 23, .4);
+            border-radius: 0 8px 8px 0;
+            line-height: 1.5;
+        }
+
+        .connector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .connector .v-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .connector .v-arrow .line {
+            width: 2px;
+            height: 28px;
+            background: linear-gradient(180deg, var(--lineH), var(--blue));
+        }
+
+        .connector .v-arrow .head {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid var(--blue);
+        }
+
+        .connector .v-arrow.green .line { background: linear-gradient(180deg, var(--lineH), var(--green)); }
+        .connector .v-arrow.green .head { border-top-color: var(--green); }
+        .connector .v-arrow.purple .line { background: linear-gradient(180deg, var(--lineH), var(--purple)); }
+        .connector .v-arrow.purple .head { border-top-color: var(--purple); }
+        .connector .v-arrow.amber .line { background: linear-gradient(180deg, var(--lineH), var(--amber)); }
+        .connector .v-arrow.amber .head { border-top-color: var(--amber); }
+
+        .connector .label {
+            font-size: 11px;
+            color: var(--muted);
+            margin-left: 10px;
+            font-weight: 500;
+        }
+
+        .training-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .loss-eq {
+            font-family: var(--mono);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 16px 20px;
+            border-radius: 10px;
+            background: rgba(2, 6, 23, .6);
+            border: 1px solid var(--line);
+            text-align: center;
+            letter-spacing: .5px;
+            margin: 12px 0;
+        }
+
+        .loss-eq .hl-blue { color: var(--blue); }
+        .loss-eq .hl-amber { color: var(--amber); }
+        .loss-eq .hl-green { color: var(--green); }
+        .loss-eq .hl-rose { color: var(--rose); }
+        .loss-eq .hl-purple { color: var(--purple); }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .faq-item {
+            background: rgba(13, 17, 23, .6);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color .3s;
+        }
+
+        .faq-item:hover { border-color: var(--lineH); }
+
+        .faq-q {
+            padding: 14px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+            transition: color .3s;
+        }
+
+        .faq-q:hover { color: var(--blue); }
+
+        .faq-q .num {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(96, 165, 250, .1);
+            border: 1px solid rgba(96, 165, 250, .25);
+            color: var(--blue);
+            flex-shrink: 0;
+        }
+
+        .faq-q .chevron {
+            margin-left: auto;
+            transition: transform .3s;
+            color: #475569;
+            font-size: 16px;
+        }
+
+        .faq-item.open .faq-q .chevron { transform: rotate(180deg); }
+
+        .faq-a {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height .4s ease, padding .3s;
+        }
+
+        .faq-item.open .faq-a {
+            max-height: 400px;
+            padding: 0 18px 16px;
+        }
+
+        .faq-a p {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .faq-a p .k {
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .backprop-banner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(52, 211, 153, .06), rgba(96, 165, 250, .06));
+            border: 1px solid rgba(52, 211, 153, .2);
+            margin-top: 20px;
+        }
+
+        .backprop-banner .icon-lg {
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .backprop-banner .text {
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .backprop-banner .text strong { color: var(--green); }
+
+        .legend {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            padding: 16px 20px;
+            background: rgba(2, 6, 23, .5);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .callout-box {
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 1px dashed var(--lineH);
+            background: rgba(2, 6, 23, .4);
+            margin-top: 16px;
+        }
+
+        .callout-box .callout-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--amber);
+            margin-bottom: 6px;
+        }
+
+        .callout-box p {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        /* ── Comparison table ─────────────────────────────────── */
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin: 12px 0;
+        }
+
+        .compare-table th {
+            text-align: left;
+            font-weight: 600;
+            color: var(--muted);
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--lineH);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .compare-table td {
+            padding: 8px 12px;
+            color: #cbd5e1;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .compare-table tr:last-child td { border-bottom: none; }
+
+        .compare-table .highlight {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: 12px;
+            background: rgba(2, 6, 23, .7);
+            padding: 2px 7px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            color: #e2e8f0;
+        }
+
+        @media (max-width: 1100px) {
+            .arch-grid { grid-template-columns: 1fr; }
+            .arch-grid-4 { grid-template-columns: 1fr 1fr; }
+            .training-grid { grid-template-columns: 1fr; }
+            .faq-grid { grid-template-columns: 1fr; }
+            header { padding: 16px 20px; }
+            .main { padding: 16px 20px; }
+        }
+
+        @media (max-width: 700px) {
+            .arch-grid-4 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>DETR — Detection Transformer</h1>
+        <p class="sub">Architecture + training flow with tensor shapes. End-to-end object detection without anchors or
+            NMS — from image to bounding boxes in one forward pass.</p>
+        <div class="pipeline">
+            <span class="step">🖼️ Input image</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🏗️ ResNet backbone</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">1×1 conv</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">📐 Position embed</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🔄 Encoder (×6)</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🎯 Decoder (×6)</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">100 predictions</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">🔀 Hungarian match</span>
+            <span class="arrow-sep">→</span>
+            <span class="step">📉 Set loss</span>
+        </div>
+    </header>
+
+    <div class="main">
+
+        <!-- ==================== LEGEND ==================== -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--blue)"></div> Image features / backbone
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--purple)"></div> Transformer encoder
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--amber)"></div> Object queries / decoder
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--green)"></div> Prediction heads / output
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--rose)"></div> Loss / matching
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--cyan)"></div> Position embeddings
+            </div>
+        </div>
+
+        <!-- ==================== STEP 1: BACKBONE ==================== -->
+        <div class="section-title">Step 1 · CNN Backbone (Feature Extraction)</div>
+
+        <div class="card blue">
+            <div class="card-head">
+                <div class="icon blue">🏗️</div>
+                <div>
+                    <div class="label">ResNet-50 Backbone</div>
+                    <div class="sublabel">Pretrained CNN feature extractor · classification head removed</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="dim-flow">
+                    <span class="d" style="border-color:rgba(96,165,250,.4)">(B, 3, H, W)</span>
+                    <span class="arr">→</span>
+                    <span class="op">conv1 + bn + relu + maxpool</span>
+                    <span class="arr">→</span>
+                    <span class="op">layer1 → layer2 → layer3 → layer4</span>
+                    <span class="arr">→</span>
+                    <span class="d">(B, 2048, H/32, W/32)</span>
+                    <span class="arr">→</span>
+                    <span class="op">1×1 Conv2D</span>
+                    <span class="arr">→</span>
+                    <span class="d" style="border-color:rgba(96,165,250,.6); color:var(--blue)">(B, 256, H/32,
+                        W/32)</span>
+                </div>
+                <ul class="bullets blue">
+                    <li>ResNet-50 reduces spatial resolution by 32× (e.g., 800×1066 → <strong>25×34</strong>)</li>
+                    <li>Final conv layer outputs <strong>2048 channels</strong> — rich semantic features</li>
+                    <li>1×1 convolution projects to transformer's <strong>hidden_dim = 256</strong></li>
+                    <li>Classification head (<code>fc</code>) is deleted — we only need the feature map</li>
+                </ul>
+                <div class="note-text">For an 800px input: feature map ≈ (B, 256, 25, 34) → 850 spatial tokens for the
+                    transformer</div>
+            </div>
+        </div>
+
+        <!-- ==================== STEP 2: POSITION ENCODING ==================== -->
+        <div class="connector">
+            <div class="v-arrow">
+                <div class="line"></div>
+                <div class="head"></div>
+            </div><span class="label">Add 2D position embeddings</span>
+        </div>
+
+        <div class="section-title">Step 2 · Position Embedding (Learned Row + Column)</div>
+
+        <div class="card cyan">
+            <div class="card-head">
+                <div class="icon cyan">📐</div>
+                <div>
+                    <div class="label">2D Learned Position Embedding</div>
+                    <div class="sublabel">Separate row and column embeddings concatenated per spatial position</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="training-grid" style="margin-bottom:12px">
+                    <div>
+                        <p style="font-size:13px;color:#cbd5e1;font-weight:600;margin-bottom:8px">Row Embedding:</p>
+                        <span class="shape cyan">row_embed: (50, 128)</span>
+                        <div class="note-text" style="margin-top:8px">Same row PE for every column in that row</div>
+                    </div>
+                    <div>
+                        <p style="font-size:13px;color:#cbd5e1;font-weight:600;margin-bottom:8px">Column Embedding:</p>
+                        <span class="shape cyan">col_embed: (50, 128)</span>
+                        <div class="note-text" style="margin-top:8px">Same column PE for every row in that column</div>
+                    </div>
+                </div>
+                <div class="dim-flow">
+                    <span class="d">col[:W] (1, W, 128)</span>
+                    <span class="op">repeat H rows</span>
+                    <span class="arr">→</span>
+                    <span class="d">(H, W, 128)</span>
+                    <span class="arr">||</span>
+                    <span class="d">row[:H] (H, 1, 128)</span>
+                    <span class="op">repeat W cols</span>
+                    <span class="arr">→</span>
+                    <span class="d">(H, W, 128)</span>
+                    <span class="arr">→</span>
+                    <span class="op">concat</span>
+                    <span class="arr">→</span>
+                    <span class="d" style="border-color:rgba(34,211,238,.5); color:var(--cyan)">(H, W, 256)</span>
+                    <span class="arr">→</span>
+                    <span class="op">flatten</span>
+                    <span class="arr">→</span>
+                    <span class="d">(H×W, 1, 256)</span>
+                </div>
+                <ul class="bullets cyan">
+                    <li>128-dim row + 128-dim col = 256-dim total (matches hidden_dim)</li>
+                    <li>50 is an upper bound for feature map dimensions (both H and W are < 50)</li>
+                    <li>PE is <strong>added to image features</strong> before entering the encoder</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ==================== STEP 3: TRANSFORMER ==================== -->
+        <div class="connector">
+            <div class="v-arrow purple">
+                <div class="line"></div>
+                <div class="head"></div>
+            </div><span class="label">Flatten + feed into transformer</span>
+        </div>
+
+        <div class="section-title">Step 3 · Transformer (Encoder + Decoder)</div>
+
+        <div class="training-grid">
+            <!-- ENCODER -->
+            <div class="card purple">
+                <div class="card-head">
+                    <div class="icon purple">🔄</div>
+                    <div>
+                        <div class="label">Transformer Encoder (×6 layers)</div>
+                        <div class="sublabel">Self-attention over image feature tokens</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dim-flow">
+                        <span class="d">(B, 256, H, W)</span>
+                        <span class="arr">→</span>
+                        <span class="op">flatten + permute</span>
+                        <span class="arr">→</span>
+                        <span class="d">(H×W, B, 256)</span>
+                        <span class="arr">→</span>
+                        <span class="op">+ pos embed</span>
+                        <span class="arr">→</span>
+                        <span class="d" style="border-color:rgba(167,139,250,.4); color:var(--purple)">(H×W, B,
+                            256)</span>
+                    </div>
+                    <ul class="bullets purple">
+                        <li><strong>Self-attention:</strong> every spatial token attends to all other tokens</li>
+                        <li>Position embeddings added at <strong>every layer</strong> (not just once)</li>
+                        <li>PE added to <strong>Q and K only</strong>, not V (preserves value content)</li>
+                        <li>6 layers of multi-head self-attention (8 heads)</li>
+                        <li>Output: contextually enriched image features</li>
+                    </ul>
+                    <div class="note-text">PyTorch's nn.Transformer uses (seq_len, batch, dim) format — hence the
+                        permute to (H×W, B, 256)</div>
+                </div>
+            </div>
+
+            <!-- DECODER -->
+            <div class="card amber">
+                <div class="card-head">
+                    <div class="icon amber">🎯</div>
+                    <div>
+                        <div class="label">Transformer Decoder (×6 layers)</div>
+                        <div class="sublabel">Object queries cross-attend to encoder output</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p style="font-size:13px;color:#cbd5e1;font-weight:600;margin-bottom:10px">100 Learnable Object
+                        Queries:</p>
+                    <div style="margin-bottom:12px">
+                        <span class="shape amber">query_pos: (100, 256)</span>
+                    </div>
+                    <ul class="bullets amber">
+                        <li><strong>Self-attention:</strong> 100 queries attend to each other (reason about objects'
+                            relationships)</li>
+                        <li><strong>Cross-attention:</strong> Q = object queries, K/V = encoder output</li>
+                        <li>Each query "asks" the image: <em>"is there an object like me here?"</em></li>
+                        <li>Queries use <strong>learnable PE</strong> — no inherent spatial meaning</li>
+                        <li>Keys use <strong>sinusoidal PE</strong> (from 2D image grid)</li>
+                    </ul>
+                    <div class="dim-flow">
+                        <span class="d" style="border-color:rgba(251,191,36,.4); color:var(--amber)">(100, 1,
+                            256)</span>
+                        <span class="arr">→</span>
+                        <span class="op">6× (self-attn + cross-attn + FFN)</span>
+                        <span class="arr">→</span>
+                        <span class="d">(100, B, 256)</span>
+                        <span class="arr">→</span>
+                        <span class="op">transpose</span>
+                        <span class="arr">→</span>
+                        <span class="d" style="border-color:rgba(251,191,36,.5); color:var(--amber)">(B, 100,
+                            256)</span>
+                    </div>
+                    <div class="note-text">Object queries start as 0 + learnable PE = PE directly. Each of the 100
+                        output vectors represents one potential detection slot.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout-box">
+            <div class="callout-title">🔗 Encoder ↔ Decoder Connection</div>
+            <p>
+                The encoder output <span class="shape">(H×W, B, 256)</span> serves as the <strong>Key and Value</strong>
+                in every decoder cross-attention layer. Object queries <span class="shape">(100, 1, 256)</span> serve as
+                the <strong>Query</strong>. This lets each object query "look at" the entire image to find its assigned
+                object. During training, loss is computed on outputs from <strong>all decoder layers</strong>, not just
+                the final one.
+            </p>
+        </div>
+
+        <!-- ==================== STEP 4: PREDICTION HEADS ==================== -->
+        <div class="connector">
+            <div class="v-arrow green">
+                <div class="line"></div>
+                <div class="head"></div>
+            </div><span class="label">Parallel prediction heads</span>
+        </div>
+
+        <div class="section-title">Step 4 · Prediction Heads (100 Parallel Predictions)</div>
+
+        <div class="card green">
+            <div class="card-head">
+                <div class="icon green">✨</div>
+                <div>
+                    <div class="label">Class + BBox Predictions</div>
+                    <div class="sublabel">Each of 100 decoder outputs → one class + one bounding box</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+                    <div>
+                        <p style="font-size:13px;color:#cbd5e1;font-weight:600;margin-bottom:10px">Classification Head:
+                        </p>
+                        <div class="dim-flow">
+                            <span class="d">(B, 100, 256)</span>
+                            <span class="arr">→</span>
+                            <span class="op">Linear(256, 92)</span>
+                            <span class="arr">→</span>
+                            <span class="d"
+                                style="border-color:rgba(52,211,153,.5); color:var(--green)">(B, 100, 92)</span>
+                        </div>
+                        <ul class="bullets green">
+                            <li>91 COCO classes + 1 "no object" (∅) class</li>
+                            <li>Softmax over 92 classes at inference</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p style="font-size:13px;color:#cbd5e1;font-weight:600;margin-bottom:10px">Bounding Box Head:
+                        </p>
+                        <div class="dim-flow">
+                            <span class="d">(B, 100, 256)</span>
+                            <span class="arr">→</span>
+                            <span class="op">Linear(256, 4)</span>
+                            <span class="arr">→</span>
+                            <span class="op">sigmoid</span>
+                            <span class="arr">→</span>
+                            <span class="d"
+                                style="border-color:rgba(52,211,153,.5); color:var(--green)">(B, 100, 4)</span>
+                        </div>
+                        <ul class="bullets green">
+                            <li>Predicts (cx, cy, w, h) in [0, 1] normalized coords</li>
+                            <li>Sigmoid ensures all values are in valid range</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="note-text">At inference, filter predictions where "no object" class has highest probability.
+                    Remaining predictions are final detections — <strong>no NMS needed</strong>.</div>
+            </div>
+        </div>
+
+        <!-- ==================== STEP 5: HUNGARIAN MATCHING ==================== -->
+        <div class="connector">
+            <div class="v-arrow" style="--c:var(--rose)">
+                <div class="line" style="background:linear-gradient(180deg, var(--lineH), var(--rose))"></div>
+                <div class="head" style="border-top-color:var(--rose)"></div>
+            </div><span class="label">Match predictions to ground truth (training only)</span>
+        </div>
+
+        <div class="section-title">Step 5 · Hungarian Matching + Set Loss</div>
+
+        <div class="card rose">
+            <div class="card-head">
+                <div class="icon rose">🔀</div>
+                <div>
+                    <div class="label">Bipartite Matching (Hungarian Algorithm)</div>
+                    <div class="sublabel">Optimally assign each prediction to one ground truth — one-to-one, no
+                        duplicates</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="loss-eq">
+                    σ̂ = argmin<sub>σ</sub> ∑<sub>i</sub><sup>N</sup> <span
+                        class="hl-rose">L</span><sub>match</sub>(y<sub>i</sub>, ŷ<sub>σ(i)</sub>)
+                </div>
+                <ul class="bullets rose">
+                    <li><strong>N = 100</strong> predictions, <strong>M</strong> ground-truth objects (M < 100)</li>
+                    <li>Pad ground truth with <strong>(100 − M)</strong> "no object" labels</li>
+                    <li>Build <strong>cost matrix:</strong> matching cost for every (prediction, GT) pair</li>
+                    <li>Hungarian algorithm finds the <strong>optimal one-to-one assignment</strong></li>
+                    <li>Each prediction matches to exactly one GT (or ∅) — <strong>no duplicate detections</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="height:16px"></div>
+
+        <div class="arch-grid">
+            <div class="card blue">
+                <div class="card-head">
+                    <div class="icon blue">📋</div>
+                    <div>
+                        <div class="label">Classification Loss</div>
+                        <div class="sublabel">Cross-entropy on matched pairs</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="loss-eq">
+                        <span class="hl-blue">L<sub>cls</sub></span> = CE(ŷ<sub>class</sub>, y<sub>class</sub>)
+                    </div>
+                    <ul class="bullets blue">
+                        <li>Penalizes wrong class assignments</li>
+                        <li>"No object" class handles unmatched slots</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card amber">
+                <div class="card-head">
+                    <div class="icon amber">📏</div>
+                    <div>
+                        <div class="label">L1 Box Loss</div>
+                        <div class="sublabel">Per-coordinate distance</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="loss-eq">
+                        <span class="hl-amber">L<sub>L1</sub></span> = |cx−ĉx| + |cy−ĉy| + |w−ŵ| + |h−ĥ|
+                    </div>
+                    <ul class="bullets amber">
+                        <li>Absolute error on normalized coords</li>
+                        <li>Simple but sensitive to box scale</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card green">
+                <div class="card-head">
+                    <div class="icon green">📐</div>
+                    <div>
+                        <div class="label">Generalized IoU Loss</div>
+                        <div class="sublabel">Scale-invariant overlap metric</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="loss-eq">
+                        <span class="hl-green">L<sub>GIoU</sub></span> = 1 − IoU + |C \ (A∪B)| / |C|
+                    </div>
+                    <ul class="bullets green">
+                        <li>C = smallest enclosing box of prediction & GT</li>
+                        <li>Unlike IoU, penalizes non-overlapping boxes too</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div style="height:16px"></div>
+
+        <div class="card rose">
+            <div class="card-body">
+                <div class="loss-eq" style="font-size:16px">
+                    <span class="hl-rose">L<sub>total</sub></span> = λ<sub>cls</sub> · <span
+                        class="hl-blue">L<sub>cls</sub></span>
+                    + λ<sub>L1</sub> · <span class="hl-amber">L<sub>L1</sub></span> + λ<sub>GIoU</sub> · <span
+                        class="hl-green">L<sub>GIoU</sub></span>
+                </div>
+                <div class="note-text">Loss is computed on outputs from <strong>all 6 decoder layers</strong> and
+                    summed (auxiliary decoding losses help with training convergence).</div>
+            </div>
+        </div>
+
+        <!-- ==================== BACKPROP ==================== -->
+        <div class="backprop-banner">
+            <div class="icon-lg">⟲</div>
+            <div class="text">
+                <strong>Gradients flow end-to-end:</strong> Prediction Heads → Transformer Decoder → Transformer Encoder
+                → 1×1 Conv → ResNet Backbone.
+                The ResNet backbone starts <strong>ImageNet-pretrained</strong> and is fine-tuned. The transformer,
+                prediction heads, object queries, and position embeddings are all <strong>trained from scratch</strong>.
+                Training requires <strong>300+ epochs</strong> on COCO — significantly longer than CNN-based detectors.
+            </div>
+        </div>
+
+        <!-- comparison table -->
+        <div class="callout-box" style="margin-top:24px">
+            <div class="callout-title">📊 DETR vs Traditional Detectors</div>
+            <table class="compare-table">
+                <tr>
+                    <th>Aspect</th>
+                    <th>Traditional (YOLO, RCNN)</th>
+                    <th>DETR</th>
+                </tr>
+                <tr>
+                    <td>Anchors</td>
+                    <td>Hand-designed anchor boxes</td>
+                    <td class="highlight">No anchors</td>
+                </tr>
+                <tr>
+                    <td>NMS</td>
+                    <td>Required post-processing</td>
+                    <td class="highlight">Not needed</td>
+                </tr>
+                <tr>
+                    <td>Predictions</td>
+                    <td>Many → filter duplicates</td>
+                    <td class="highlight">Fixed set, no duplicates</td>
+                </tr>
+                <tr>
+                    <td>Matching</td>
+                    <td>Heuristic (IoU-based)</td>
+                    <td class="highlight">Optimal (Hungarian)</td>
+                </tr>
+                <tr>
+                    <td>Architecture</td>
+                    <td>Mostly CNN</td>
+                    <td>CNN + Transformer</td>
+                </tr>
+                <tr>
+                    <td>Training</td>
+                    <td>Fast convergence</td>
+                    <td>Slow (300+ epochs)</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- ==================== WHY SECTION ==================== -->
+        <div style="height:24px"></div>
+        <div class="section-title">Design Decisions · Why?</div>
+
+        <div class="faq-grid">
+            <div class="faq-item open">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">1</span>
+                    Why object queries instead of anchors?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Anchor boxes require <span class="k">hand-tuning</span> (how many, what aspect ratios, how
+                        densely spaced). Object queries are <span class="k">fully learned</span> — the model discovers
+                        what "slots" to allocate. Each query specializes (e.g., one query tends to detect objects in the
+                        top-left, another focuses on large objects). This removes a whole category of human engineering.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">2</span>
+                    Why Hungarian matching instead of IoU-based NMS?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>NMS is a <span class="k">greedy heuristic</span> — it suppresses overlapping boxes based on an
+                        IoU threshold, which can accidentally remove valid detections of nearby objects. Hungarian
+                        matching finds the <span class="k">globally optimal</span> one-to-one assignment between
+                        predictions and ground truth. Each prediction matches exactly one object — duplicates are
+                        structurally impossible.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">3</span>
+                    Why 100 object queries?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>100 is an <span class="k">upper bound</span> on the maximum number of objects per image in COCO.
+                        Most images have far fewer objects, so most queries learn to predict "no object" (∅). The number
+                        is a hyperparameter — increasing it handles denser scenes but adds computation. Decreasing it
+                        risks missing objects in crowded images.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">4</span>
+                    Why GIoU loss instead of plain IoU?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Standard IoU is <span class="k">0 for non-overlapping boxes</span> regardless of how far apart
+                        they are — useless gradient signal. GIoU subtracts the fraction of the enclosing box that's
+                        empty, so even completely separated predictions get a <span class="k">distance-aware
+                            gradient</span> pushing them toward the target. Combined with L1 loss, it covers both
+                        coordinate accuracy and overlap quality.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">5</span>
+                    Why does DETR need 300+ epochs to train?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>The transformer decoder starts with <span class="k">random object queries</span> that have no
+                        spatial prior (unlike anchors which start at known grid positions). The model must learn from
+                        scratch where to look and what to specialize on. This "cold start" requires many epochs for the
+                        attention patterns to stabilize. Variants like <span class="k">Deformable DETR</span> reduce
+                        this by limiting attention to a learned sparse set of spatial positions.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">6</span>
+                    Why row + column position embeddings?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>A single 1D position embedding loses <span class="k">2D spatial structure</span>. Separate row
+                        and column embeddings (128-d each, concatenated to 256-d) preserve the grid layout: two
+                        positions in the same row share the same row embedding, two in the same column share the column
+                        embedding. This gives the transformer explicit <span class="k">2D spatial awareness</span>
+                        without the overhead of a full 2D PE matrix.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="num">7</span>
+                    The mental model that makes DETR click
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Think of 100 object queries as <span class="k">100 detectives</span> sent to investigate an
+                        image. Each detective starts with no clue (random initialization). Through 6 rounds of
+                        cross-examination (decoder layers), each detective "interrogates" the image features (via
+                        cross-attention) and coordinates with other detectives (via self-attention) to avoid duplicating
+                        work. By the end, each detective either reports an object or says "nothing found" (∅).</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
