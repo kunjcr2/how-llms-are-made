@@ -349,8 +349,8 @@
                                 <li>Pure exploration wastes time on known bad actions</li>
                             </ul>
                             <div class="context-block">
-                                <div class="context-label">Common Strategies</div>
-                                <p class="context-text">ε-greedy (random exploration), UCB (optimistic estimates), Thompson Sampling (probability matching), entropy bonuses in policy gradients. The right strategy depends on environment stochasticity and horizon length.</p>
+                                <div class="context-label">Common Strategy</div>
+                                <p class="context-text">The notes focus on ε-greedy: pick a random action with probability ε and greedy action otherwise. Schedules anneal ε downward as learning progresses.</p>
                             </div>
                         </div>
                     </div>
@@ -371,7 +371,7 @@
                             </ul>
                             <div class="context-block">
                                 <div class="context-label">Practical Implications</div>
-                                <p class="context-text">When true state isn't fully observable (POMDP), solutions include state estimation, recurrent policies, or frame stacking. LLM token generation treats prompt + generated tokens as state — approximately Markov with sufficient context.</p>
+                                <p class="context-text">When true state isn't fully observable (POMDP), solutions include state estimation or frame stacking. LLM token generation treats prompt + generated tokens as state — approximately Markov with sufficient context.</p>
                             </div>
                         </div>
                     </div>
@@ -460,7 +460,8 @@
                             <ul class="detail-list">
                                 <li>With probability (1-ε): take best known action (exploit)</li>
                                 <li>With probability ε: take random action (explore)</li>
-                                <li>Typical schedule: ε = 1.0 → 0.01 over training</li>
+                                <li>Typical schedule: ε = 1.0 → 0.01 over training</li>
+                                <li>Goal is to maximize return Gₜ = Σₖ γᵏRₜ₊ₖ₊₁ (discounted sum of future rewards)</li>
                                 <li>Ensures all actions tried, converges to optimal</li>
                             </ul>
                         </div>
@@ -674,7 +675,9 @@
                         <div class="formula">Loss = (r + γ maxₐ' Q_target(s',a') - Q(s,a))²</div>
                         <div class="card-details">
                             <ul class="detail-list">
-                                <li>CNN processes stacked frames (4×84×84)</li>
+                                <li>CNN processes stacked frames (4×84×84) using three conv layers (8×8 stride4, 4×4 stride2, 3×3 stride1) followed by a 512‑unit fully connected head</li>
+                                <li>Updates use Huber (smooth‑L1) loss with a separate target network and replay buffer</li>
+                                <li>Typical hyperparameters from the paper: replay buffer 100 000, batch size 32, γ=0.99, lr=0.00025, ε annealed 1→0.1 over 1 M frames</li>
                                 <li>Outputs Q-value for each possible action</li>
                                 <li>Human-level performance on 49 Atari games</li>
                             </ul>
@@ -685,11 +688,11 @@
                         <p class="card-desc">Breaking temporal correlation by sampling from stored transitions.</p>
                         <div class="card-details">
                             <ul class="detail-list">
-                                <li>Store transitions (s, a, r, s') in replay buffer</li>
-                                <li>Sample random minibatches for training</li>
-                                <li>Breaks temporal correlation in data</li>
-                                <li>Each experience used multiple times</li>
-                                <li>Essential for stable DQN training</li>
+                                <li>Store transitions (s, a, r, s') in replay buffer (capacity ≈100 000 in original work).</li>
+                                <li>Sample random minibatches (e.g. 32 samples) for training.</li>
+                                <li>Breaks temporal correlation in data and makes each experience reusable.</li>
+                                <li>Allows off-policy updates and stabilizes learning.</li>
+                                <li>Essential for stable DQN training.</li>
                             </ul>
                         </div>
                     </div>
@@ -888,13 +891,33 @@
                         <div class="card-details">
                             <ul class="detail-list">
                                 <li><strong>Stage 1:</strong> SFT on human demonstrations</li>
-                                <li><strong>Stage 2:</strong> Train reward model on preference pairs</li>
+                                <li><strong>Stage 2:</strong> Train reward model on preference pairs (pairwise logistic loss)</li>
                                 <li><strong>Stage 3:</strong> Optimize policy with PPO + reward model</li>
                                 <li><strong>KL penalty:</strong> Prevents drifting from base model</li>
+                                <li><strong>Reward model:</strong> input prompt+response → scalar score; trained to rank preferred answer higher (Bradley–Terry style)</li>
+                                <li><strong>Watch out:</strong> reward hacking and domain shift can degrade RM quality</li>
                             </ul>
                             <div class="context-block">
                                 <div class="context-label">Powers Modern LLMs</div>
                                 <p class="context-text">RLHF is why ChatGPT feels helpful rather than just completing text. The reward model captures human preferences about helpfulness, harmlessness, and honesty.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- reward model card inserted below -->
+                    <div class="card" onclick="toggleCard(this)">
+                        <div class="card-header"><h3 class="card-title">Reward Model</h3><span class="card-tag">Component</span></div>
+                        <p class="card-desc">Neural network that scores candidate responses based on human preferences.</p>
+                        <div class="card-details">
+                            <ul class="detail-list">
+                                <li>Inputs: prompt + candidate answer</li>
+                                <li>Output: single scalar reward value</li>
+                                <li>Trained on human-labeled preference pairs</li>
+                                <li>Uses pairwise logistic (Bradley–Terry) loss: −log σ(s⁺−s⁻)</li>
+                                <li>Architecture: text encoder with linear head (e.g. DeBERTa)</li>
+                            </ul>
+                            <div class="context-block">
+                                <div class="context-label">Usage</div>
+                                <p class="context-text">The RM guides PPO updates and can later evaluate model quality; good RM reduces reward hacking and ensures alignment.</p>
                             </div>
                         </div>
                     </div>
