@@ -2,7 +2,7 @@
 
 > *"The data is the message. Linear algebra is the language."*
 
-In ML/DL, **every piece of data is a vector or matrix**, and every model operation is a linear (or nonlinear) transformation. Understanding linear algebra means understanding *what neural networks actually do* at a geometric and algebraic level.
+Linear algebra is the language of data. Data comes in tables, images, sequences — all of which are naturally represented as vectors and matrices. Understanding how to work with these objects, and what operations on them mean geometrically, is the foundation for almost all quantitative work.
 
 ---
 
@@ -27,32 +27,20 @@ In ML/DL, **every piece of data is a vector or matrix**, and every model operati
 
 ### The Hierarchy
 
-| Object | Dimensions | Example in ML |
-|--------|-----------|---------------|
-| **Scalar** $a \in \mathbb{R}$ | 0D | A single loss value, learning rate |
-| **Vector** $\mathbf{v} \in \mathbb{R}^n$ | 1D | One data sample, word embedding |
-| **Matrix** $\mathbf{A} \in \mathbb{R}^{m \times n}$ | 2D | Weight layer, dataset |
-| **Tensor** $\mathcal{T} \in \mathbb{R}^{d_1 \times \ldots \times d_k}$ | $k$D | Image batch, attention scores |
+| Object | Dimensions | Example |
+|--------|-----------|--------|
+| **Scalar** $a \in \mathbb{R}$ | 0D | A temperature reading, a price |
+| **Vector** $\mathbf{v} \in \mathbb{R}^n$ | 1D | A person's measurements, a data row |
+| **Matrix** $\mathbf{A} \in \mathbb{R}^{m \times n}$ | 2D | A spreadsheet, a greyscale image |
+| **Tensor** $\mathcal{T} \in \mathbb{R}^{d_1 \times \ldots \times d_k}$ | $k$D | A colour image (height × width × 3) |
 
 ### Vectors as Points and Directions
 
 A vector $\mathbf{v} = [v_1, v_2, \ldots, v_n]^T$ can mean two things:
-- A **point** in $n$-dimensional space (a data sample)
-- A **direction** with magnitude (a gradient, a weight update)
+- A **point** in $n$-dimensional space
+- A **direction** with magnitude (an arrow pointing somewhere)
 
 Context determines which interpretation makes sense.
-
-### 🔗 ML Connection
-
-A dataset of $N$ samples each with $d$ features is a matrix $\mathbf{X} \in \mathbb{R}^{N \times d}$:
-
-$$\mathbf{X} = \begin{pmatrix} x_{11} & x_{12} & \cdots & x_{1d} \\ x_{21} & x_{22} & \cdots & x_{2d} \\ \vdots & & \ddots & \vdots \\ x_{N1} & x_{N2} & \cdots & x_{Nd} \end{pmatrix}$$
-
-Each **row** is one data sample; each **column** is one feature. A forward pass through a linear layer is:
-
-$$\mathbf{Z} = \mathbf{X} \mathbf{W}^T + \mathbf{b}$$
-
-Everything in deep learning is matrix multiplication at its core.
 
 ---
 
@@ -72,12 +60,6 @@ A **linear combination** of vectors $\mathbf{v}_1, \ldots, \mathbf{v}_k$:
 $$\mathbf{u} = c_1\mathbf{v}_1 + c_2\mathbf{v}_2 + \cdots + c_k\mathbf{v}_k$$
 
 The **span** is the set of all possible linear combinations — the subspace these vectors can "reach".
-
-### 🔗 ML Connection
-
-The output of a linear layer $\mathbf{z} = \mathbf{W}\mathbf{x}$ is a linear combination of the rows of $\mathbf{W}$, weighted by entries of $\mathbf{x}$.
-
-**Word embeddings**: "king" - "man" + "woman" ≈ "queen" — vector arithmetic on semantic meaning.
 
 ---
 
@@ -104,21 +86,6 @@ The $(i,j)$ entry of $\mathbf{AB}$ is the dot product of row $i$ of $\mathbf{A}$
 $$(\mathbf{AB})^T = \mathbf{B}^T \mathbf{A}^T \quad \text{(order reverses)}$$
 $$(\mathbf{ABC})^T = \mathbf{C}^T \mathbf{B}^T \mathbf{A}^T$$
 
-### 🔗 ML Connection
-
-Every feedforward pass is a sequence of matrix multiplications:
-
-$$\mathbf{a}^{(1)} = \sigma(\mathbf{W}^{(1)}\mathbf{x} + \mathbf{b}^{(1)})$$
-$$\mathbf{a}^{(2)} = \sigma(\mathbf{W}^{(2)}\mathbf{a}^{(1)} + \mathbf{b}^{(2)})$$
-
-The gradient backpropagation reverses this — it involves the transposes $(\mathbf{W}^{(l)})^T$.
-
-**Attention mechanism** in Transformers:
-
-$$\text{Attention}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) = \text{softmax}\left(\frac{\mathbf{Q}\mathbf{K}^T}{\sqrt{d_k}}\right)\mathbf{V}$$
-
-$\mathbf{Q}\mathbf{K}^T$ is a matrix of dot products — measuring similarity between all query-key pairs.
-
 ---
 
 ## 4. The Dot Product & Linear Transformations
@@ -142,15 +109,15 @@ A matrix $\mathbf{A}$ **transforms** input vectors to output vectors. It can:
 - Project
 - Any combination
 
-This is exactly what each weight layer in a neural network does — it **transforms the representation** of your data from one space to another.
+This geometric view is powerful: a sequence of matrix operations is a sequence of transformations of space.
 
-### 🔗 ML Connection
+### Cosine Similarity
 
-**Cosine Similarity** (used in NLP, retrieval, contrastive learning):
+Normalising the dot product gives a measure of **angular similarity** between two vectors:
 
 $$\cos(\theta) = \frac{\mathbf{u}^T \mathbf{v}}{\|\mathbf{u}\| \|\mathbf{v}\|}$$
 
-**Attention scores** $\mathbf{Q}\mathbf{K}^T$ are scaled dot products — they measure how much each query "attends to" each key. High dot product = high attention = similar direction in embedding space.
+This removes magnitude from the comparison — only the direction matters.
 
 ---
 
@@ -172,15 +139,7 @@ $$\|\mathbf{v}\|_p = \left(\sum_{i=1}^n |v_i|^p \right)^{1/p}$$
 
 $$\|\mathbf{A}\|_F = \sqrt{\sum_{i,j} A_{ij}^2}$$
 
-### 🔗 ML Connection
 
-| Norm | Regularisation | Effect |
-|------|---------------|--------|
-| $\|\mathbf{w}\|_2^2$ | L2 / Ridge | Shrinks weights, keeps all non-zero |
-| $\|\mathbf{w}\|_1$ | L1 / Lasso | Encourages exact zeros (sparse weights) |
-| $\|\mathbf{w}\|_F^2$ | Frobenius reg. | Limits magnitude of weight matrices in deep nets |
-
-**Gradient clipping**: Clips $\|\nabla \mathcal{L}\|_2$ to a max norm to prevent exploding gradients in RNNs/Transformers.
 
 ---
 
@@ -197,11 +156,7 @@ Three possible outcomes:
 2. **No solution** ($\mathbf{b}$ not in the column space of $\mathbf{A}$) — overdetermined
 3. **Infinitely many solutions** — underdetermined
 
-### 🔗 ML Connection
 
-The **Normal Equation** for linear regression is exactly solving $\mathbf{X}^T\mathbf{Xw} = \mathbf{X}^T\mathbf{y}$. This is a system of linear equations for the optimal weights.
-
-In practice when $N \gg d$ (more data than features), this is overdetermined — we find the **least squares solution** (closest point in the column space of $\mathbf{X}$).
 
 ---
 
@@ -220,13 +175,7 @@ $$\det\begin{pmatrix} a & b \\ c & d \end{pmatrix} = ad - bc$$
 - $\det(\mathbf{A}^T) = \det(\mathbf{A})$
 - $\det(\mathbf{A}^{-1}) = 1/\det(\mathbf{A})$
 
-### 🔗 ML Connection
 
-When $\det(\mathbf{X}^T\mathbf{X}) = 0$ (features are linearly dependent / multicollinear), the normal equation has no unique solution — regularisation saves you:
-
-$$\hat{\mathbf{w}} = (\mathbf{X}^T\mathbf{X} + \lambda \mathbf{I})^{-1}\mathbf{X}^T\mathbf{y}$$
-
-The addition of $\lambda\mathbf{I}$ ensures the matrix is always invertible (positive definite).
 
 ---
 
@@ -267,11 +216,7 @@ $$\text{rank}(\mathbf{A}) \leq \min(m, n)$$
 - **Full rank**: rank = $\min(m, n)$ — no redundant information
 - **Rank deficient**: rank < $\min(m, n)$ — some dimensions carry no extra info
 
-### 🔗 ML Connection
 
-**Intrinsic Dimensionality**: If your data $\mathbf{X} \in \mathbb{R}^{N \times d}$ has rank $r \ll d$, the data actually lives on an $r$-dimensional subspace. PCA exploits this!
-
-**Low-rank approximations** (LoRA in LLMs): Instead of fine-tuning full weight matrices $\mathbf{W} \in \mathbb{R}^{d \times d}$, approximate updates as $\mathbf{W} + \mathbf{AB}$ where $\mathbf{A} \in \mathbb{R}^{d \times r}$, $\mathbf{B} \in \mathbb{R}^{r \times d}$, $r \ll d$. Dramatically fewer parameters!
 
 ---
 
@@ -305,18 +250,7 @@ If $\mathbf{A} = \mathbf{A}^T$ (symmetric):
 - All eigenvalues are **real**
 - Eigenvectors are **orthogonal**: $\mathbf{A} = \mathbf{Q}\mathbf{\Lambda}\mathbf{Q}^T$
 
-The covariance matrix $\Sigma$ is always symmetric — its eigenvectors are the **principal components**.
-
-### 🔗 ML Connection
-
-| Application | What the Eigendecomposition Tells You |
-|------------|--------------------------------------|
-| PCA | Directions of max variance in data |
-| Spectral clustering | Community structure in graph-based data |
-| Training stability | Large eigenvalues of Hessian → sharp curvature → unstable training |
-| RNNs | Eigenvalues of recurrent weight matrix control vanishing/exploding gradients |
-
-**Vanishing/Exploding Gradients in RNNs**: Repeated matrix multiplication $\mathbf{W}^T$ computes eigenvectors. If $|\lambda_{\max}| > 1$: gradients explode. If $|\lambda_{\max}| < 1$: gradients vanish. LSTM/GRU architectures were designed to address this.
+The covariance matrix $\Sigma$ is always symmetric — so its eigenvectors are guaranteed to be orthogonal and its eigenvalues real.
 
 ---
 
@@ -341,16 +275,7 @@ The best rank-$k$ approximation of $\mathbf{A}$ in Frobenius norm:
 
 $$\mathbf{A}_k = \sum_{i=1}^k \sigma_i \mathbf{u}_i \mathbf{v}_i^T$$
 
-### 🔗 ML Connection
 
-| Application | SVD Role |
-|------------|---------|
-| PCA | $\mathbf{A} = \mathbf{U\Sigma V}^T$ → PCs are columns of $\mathbf{V}$, variance = $\sigma_i^2$ |
-| Image compression | Keep top-$k$ singular values, discard the rest |
-| Recommendation systems | Low-rank approximation of user-item matrix |
-| LoRA (LLM fine-tuning) | Represent weight updates as low-rank SVD |
-| Pseudoinverse | $\mathbf{A}^+ = \mathbf{V\Sigma}^+\mathbf{U}^T$ |
-| Stable training | Spectral normalisation clips singular values of weight matrices |
 
 ---
 
@@ -382,12 +307,7 @@ The fraction of variance explained by the first $k$ components:
 
 $$\text{Explained Variance Ratio}_k = \frac{\sum_{i=1}^k \sigma_i^2}{\sum_{i=1}^n \sigma_i^2}$$
 
-### 🔗 ML Connection
 
-- **Dimensionality reduction**: Reduce $d$-dimensional features to $k \ll d$ without losing much information
-- **Visualisation**: Project high-dimensional embeddings to 2D/3D for plotting
-- **Preprocessing**: PCA whitening decorrelates features and normalises variance — helps many ML algorithms
-- **Understanding learned representations**: PCA of word embeddings reveals semantic structure
 
 ---
 

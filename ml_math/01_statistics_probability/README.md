@@ -2,7 +2,7 @@
 
 > *"All models are wrong, but some are useful."* — George Box
 
-Statistics is not about memorizing formulas. It's about **reasoning under uncertainty** — and every ML model is, at its core, a machine for making decisions under uncertainty.
+Statistics is not about memorizing formulas. It's about **reasoning under uncertainty** — the ability to draw conclusions from incomplete information.
 
 ---
 
@@ -29,8 +29,6 @@ Statistics is not about memorizing formulas. It's about **reasoning under uncert
 
 You want to know the average height of all humans on Earth (~8 billion people). You can't measure everyone. So you **sample** — you pick a representative subset and use it to estimate the truth.
 
-This is the entire foundation of ML: your **dataset is a sample** from some unknown, true data-generating distribution. Your model is trying to learn that true distribution.
-
 ### Formal Definitions
 
 - **Population**: The complete set of all entities you care about. Described by a true distribution $P$.
@@ -38,11 +36,7 @@ This is the entire foundation of ML: your **dataset is a sample** from some unkn
 - **Statistic**: Any function of a sample (e.g., the sample mean $\bar{x}$).
 - **Parameter**: The true value in the population (e.g., population mean $\mu$). Usually unknown.
 
-### The Key Idea: Generalization
-
-$$\text{ML Training} = \text{Learning from a sample} \rightarrow \text{Generalizing to the population}$$
-
-When your model **overfits**, it has memorized the sample rather than learned the population distribution. Regularization techniques (L1, L2, dropout) are all statistical tools to fight this.
+The key tension: your sample is finite, but the population is vast. How accurately does what you measured reflect the true underlying reality?
 
 ---
 
@@ -52,23 +46,15 @@ When your model **overfits**, it has memorized the sample rather than learned th
 
 $$\bar{x} = \frac{1}{N} \sum_{i=1}^{N} x_i$$
 
-The mean **minimizes the sum of squared errors** — i.e., if you had to guess one value for all data points, the mean minimizes $\sum(x_i - \hat{x})^2$. This is *why* MSE loss in regression pulls predictions toward the mean.
+The mean **minimizes the sum of squared errors** — i.e., if you had to guess one value for all data points, the mean minimizes $\sum(x_i - \hat{x})^2$.
 
 ### Median
 
-The **middle value** when data is sorted. Minimizes the **sum of absolute errors**: $\sum |x_i - \hat{x}|$. This is why MAE (Mean Absolute Error) loss is more robust to outliers than MSE.
+The **middle value** when data is sorted. Minimizes the **sum of absolute errors**: $\sum |x_i - \hat{x}|$. More robust to outliers than the mean.
 
 ### Mode
 
-The most frequently occurring value. Used in classification — a majority vote classifier predicts the mode of the training labels.
-
-### 🔗 ML Connection
-
-| Statistic | Loss Function | Use Case |
-|-----------|--------------|----------|
-| Mean | MSE ($L_2$) | Regression, sensitive to outliers |
-| Median | MAE ($L_1$) | Robust regression |
-| Mode | 0-1 Loss | Classification baselines |
+The most frequently occurring value. Useful when you need the single most common outcome.
 
 ---
 
@@ -88,23 +74,11 @@ For a **continuous** random variable with density $p(x)$:
 
 $$\mathbb{E}[X] = \int_{-\infty}^{\infty} x \cdot p(x) \, dx$$
 
-### Properties (Crucial for ML)
+### Properties
 
 $$\mathbb{E}[aX + b] = a\mathbb{E}[X] + b \quad \text{(linearity)}$$
 $$\mathbb{E}[X + Y] = \mathbb{E}[X] + \mathbb{E}[Y] \quad \text{(always true)}$$
 $$\mathbb{E}[XY] = \mathbb{E}[X]\mathbb{E}[Y] \quad \text{(only if X, Y are independent)}$$
-
-### 🔗 ML Connection
-
-Every **loss function** is an expected value over your data:
-
-$$\mathcal{L}(\theta) = \mathbb{E}_{(x,y) \sim P_{\text{data}}} [\ell(f_\theta(x), y)]$$
-
-In practice, we approximate this expectation with a finite sample (mini-batch):
-
-$$\hat{\mathcal{L}}(\theta) = \frac{1}{B} \sum_{i=1}^{B} \ell(f_\theta(x_i), y_i)$$
-
-This is **why mini-batch SGD works** — you're computing a noisy but unbiased estimate of the true gradient of the loss.
 
 ---
 
@@ -130,17 +104,7 @@ $$\sigma = \sqrt{\sigma^2}$$
 
 Same units as the data — more interpretable than variance.
 
-### 🔗 ML Connection
 
-**Batch Normalization** literally computes the mean and variance of activations across a batch, then normalizes:
-
-$$\hat{x}_i = \frac{x_i - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}$$
-
-This stabilizes training by keeping activations in a consistent range. Without it, variance of activations can explode or vanish through deep networks.
-
-**Initialization**: Weight initialization schemes (Xavier, Kaiming) carefully control variance to prevent vanishing/exploding gradients.
-
-$$\text{Xavier: } W \sim \mathcal{N}\left(0, \frac{2}{n_{in} + n_{out}}\right)$$
 
 ---
 
@@ -170,11 +134,7 @@ $$\Sigma_{ij} = \text{Cov}(X_i, X_j)$$
 
 $$\Sigma = \frac{1}{N-1} (\mathbf{X} - \bar{\mathbf{X}})^T (\mathbf{X} - \bar{\mathbf{X}})$$
 
-### 🔗 ML Connection
 
-- **PCA** diagonalizes the covariance matrix to find directions of maximum variance
-- **Multicollinear features** (high correlation) cause instability in linear models — the reason we use regularization
-- **Gaussian Multivariate Distributions** (used in Gaussian Processes, VAEs) are fully described by a mean vector and covariance matrix
 
 ---
 
@@ -193,15 +153,7 @@ A **random variable** $X$ is a function that maps outcomes of a random experimen
 
 $$\int_{-\infty}^{\infty} p(x) \, dx = 1 \quad \text{(total probability = 1)}$$
 
-### 🔗 ML Connection
 
-Every ML model's output is ultimately describing a probability distribution over outputs:
-
-- **Regression**: Models $P(y | x) = \mathcal{N}(f_\theta(x), \sigma^2)$ — Gaussian output
-- **Binary classification**: Models $P(y=1 | x) = \sigma(f_\theta(x))$ — Bernoulli output
-- **Multi-class**: Models $P(y=k | x) = \text{softmax}(f_\theta(x))_k$ — Categorical output
-
-Understanding this probabilistic view is key to deriving loss functions from first principles.
 
 ---
 
@@ -211,7 +163,7 @@ Understanding this probabilistic view is key to deriving loss functions from fir
 
 $$X \sim \text{Uniform}(a, b), \quad p(x) = \frac{1}{b-a} \text{ for } x \in [a,b]$$
 
-All outcomes equally likely. Used in weight initialization, random sampling.
+All outcomes equally likely. A simple starting point.
 
 ### 7.2 Bernoulli Distribution
 
@@ -232,28 +184,25 @@ $$\mathbb{E}[X] = np, \quad \text{Var}(X) = np(1-p)$$
 
 ### 7.4 Normal (Gaussian) Distribution
 
-The most important distribution in ML:
+The most important distribution in statistics:
 
 $$p(x) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)$$
 
 $$X \sim \mathcal{N}(\mu, \sigma^2)$$
 
 **Why it's everywhere:**
-- Central Limit Theorem makes it the natural limit of many processes
-- Maximum entropy distribution given only mean and variance constraints
-- Leads to MSE loss when used as the likelihood model
+- The Central Limit Theorem makes it the natural limit of many averaging processes
+- It is the maximum entropy distribution given only mean and variance constraints
 
-### 7.5 Categorical / Softmax Distribution
+### 7.5 Categorical Distribution
 
-Generalization of Bernoulli to $K$ classes:
+Generalization of Bernoulli to $K$ outcomes:
 
 $$P(Y = k) = \pi_k, \quad \sum_{k=1}^K \pi_k = 1$$
 
-The **softmax function** maps logits $z$ to a valid categorical distribution:
+The **softmax function** maps any real-valued vector $z$ to a valid categorical distribution:
 
 $$\text{softmax}(z)_k = \frac{e^{z_k}}{\sum_{j=1}^K e^{z_j}}$$
-
-**Cross-entropy loss** is derived from the categorical distribution.
 
 ---
 
@@ -271,7 +220,7 @@ $$\bar{X}_n = \frac{1}{n}\sum_{i=1}^n X_i \xrightarrow{d} \mathcal{N}\left(\mu, 
 
 $$Z = \frac{X - \mu}{\sigma} \sim \mathcal{N}(0, 1)$$
 
-This **z-score** tells you how many standard deviations a data point is from the mean. It's exactly what **Batch Normalization** computes.
+This **z-score** tells you how many standard deviations a data point is from the mean.
 
 ### 68-95-99.7 Rule
 
@@ -279,12 +228,7 @@ $$P(\mu - \sigma \leq X \leq \mu + \sigma) \approx 68\%$$
 $$P(\mu - 2\sigma \leq X \leq \mu + 2\sigma) \approx 95\%$$
 $$P(\mu - 3\sigma \leq X \leq \mu + 3\sigma) \approx 99.7\%$$
 
-### 🔗 ML Connection
 
-- **Gradient noise in SGD** is approximately Gaussian (CLT applies — each gradient is an average over a batch)
-- **Feature normalization**: Standardizing features by subtracting mean and dividing by std makes optimization easier
-- **Gaussian noise augmentation**: Adding $\mathcal{N}(0, \sigma^2)$ noise to training data improves robustness
-- **Variational Autoencoders (VAEs)**: Encode inputs as Gaussian distributions in latent space
 
 ---
 
@@ -319,18 +263,7 @@ $$\boxed{P(H \mid D) = \frac{P(D \mid H) \cdot P(H)}{P(D)}}$$
 
 $$P(D) = \sum_h P(D \mid H=h) \cdot P(H=h)$$
 
-### 🔗 ML Connection
 
-**Naïve Bayes classifier** applies Bayes' theorem directly. For text classification:
-
-$$P(\text{spam} \mid \text{words}) \propto P(\text{words} \mid \text{spam}) \cdot P(\text{spam})$$
-
-**Bayesian Neural Networks**: Instead of point estimates for weights $\theta$, compute the full posterior $P(\theta \mid \text{data})$ — captures uncertainty.
-
-**The Bayesian Interpretation of Regularization**:
-- L2 regularization = Gaussian prior on weights
-- L1 regularization = Laplace prior on weights
-- Priors encode beliefs about model complexity *before* seeing data
 
 ---
 
@@ -384,10 +317,7 @@ This is the **cross-entropy loss** used in virtually all classification networks
 
 ### The Fundamental Insight
 
-$$\text{Minimizing Cross-Entropy Loss} \equiv \text{MLE under Categorical Distribution}$$
-$$\text{Minimizing MSE Loss} \equiv \text{MLE under Gaussian Distribution}$$
-
-Your loss function is not chosen arbitrarily — it encodes an assumption about the data distribution.
+Your choice of loss function is not arbitrary — it follows directly from your assumption about the probability distribution of the data. MLE gives you the principled derivation of why each loss function takes the form it does.
 
 ---
 
@@ -455,29 +385,7 @@ $$\mathcal{L}(\mathbf{w}) = -\frac{1}{N}\sum_{i=1}^N \left[ y_i \log \hat{p}_i +
 
 The model predicts class 1 when $P(y=1 \mid x) > 0.5$, which is equivalent to $\mathbf{w}^T\mathbf{x} + b > 0$. This is a **hyperplane** in feature space.
 
-The first layer of a neural network is exactly logistic regression, stacked and composed!
-
----
-
-## 🔗 Putting It All Together: The Probabilistic View of Neural Networks
-
-```
-Input x
-    │
-    ▼
-[Neural Network f_θ(x)] — computes logits z
-    │
-    ▼
-[Softmax / Sigmoid] — maps to probability distribution P(y|x)
-    │
-    ▼
-[Cross-Entropy Loss] — measures -log P(y_true|x) — derived from MLE
-    │
-    ▼
-[Gradient Descent] — minimizes expected loss over data
-```
-
-Every component has a clean statistical meaning.
+Once you understand logistic regression well, more complex predictive models become natural extensions of the same ideas.
 
 ---
 

@@ -2,7 +2,7 @@
 
 > *"To understand gradient descent, you must first understand gradients. To understand gradients, you must understand derivatives. To understand derivatives, you must understand limits. But practically — you just need to understand: which way is downhill?"*
 
-Calculus in ML is fundamentally about one thing: **how does my loss change when I tweak my model's parameters?** The answer is the gradient. Gradient descent is how we use that answer to improve the model.
+Calculus is fundamentally about one thing: **how does a function change when its inputs change?** The derivative captures this precisely. Once you understand derivatives, gradients follow naturally — and with gradients, you can find the minimum of almost any function.
 
 ---
 
@@ -27,11 +27,11 @@ Calculus in ML is fundamentally about one thing: **how does my loss change when 
 
 ### What is a Function?
 
-A function $f: \mathbb{R}^n \to \mathbb{R}^m$ maps inputs to outputs. In ML:
+A function $f: \mathbb{R}^n \to \mathbb{R}^m$ maps inputs to outputs. Common examples:
 
-- **Loss function**: $\mathcal{L}: \mathbb{R}^p \to \mathbb{R}$ maps parameters $\theta$ to a scalar loss
-- **Neural network**: $f_\theta: \mathbb{R}^d \to \mathbb{R}^K$ maps inputs to class scores
-- **Activation function**: $\sigma: \mathbb{R} \to \mathbb{R}$ applied elementwise
+- $f(x) = x^2$ maps a number to its square
+- $f(x, y) = x^2 + y^2$ maps a 2D point to a scalar
+- $f(\mathbf{x}) = \mathbf{Ax}$ maps a vector to another vector via matrix multiplication
 
 ### The Limit — Formalising "Getting Close"
 
@@ -41,11 +41,7 @@ Means: as $x$ gets arbitrarily close to $a$, $f(x)$ gets arbitrarily close to $L
 
 ### Continuity
 
-$f$ is **continuous** at $a$ if $\lim_{x \to a} f(x) = f(a)$ — no jumps.
-
-### 🔗 ML Connection
-
-**Activation functions must be continuous** (almost everywhere) for backprop to work. ReLU is not differentiable at 0, but is continuous — we handle the subgradient at 0 (usually set to 0 or 0.5).
+$f$ is **continuous** at $a$ if $\lim_{x \to a} f(x) = f(a)$ — no jumps or holes in the graph.
 
 ---
 
@@ -75,16 +71,7 @@ Alternative notation: $\frac{df}{dx}\bigg|_{x=a}$, or simply $\dot{f}(a)$.
 | $\cos(x)$ | $-\sin(x)$ |
 | $\sigma(x) = \frac{1}{1+e^{-x}}$ | $\sigma(x)(1-\sigma(x))$ |
 
-The sigmoid derivative is elegant: $\sigma'(x) = \sigma(x)(1-\sigma(x))$. During backprop, since we computed $\sigma(x)$ in the forward pass, computing the gradient is essentially free.
-
-### 🔗 ML Connection
-
-Derivatives of **activation functions** determine gradient flow:
-
-- **ReLU**: $f'(x) = \begin{cases} 1 & x > 0 \\ 0 & x \leq 0 \end{cases}$ — gradient either passes through fully or dies completely (dead neurons)
-- **Sigmoid**: $f'(x) = \sigma(x)(1-\sigma(x)) \leq 0.25$ — gradients shrink at most 4× per layer → vanishing gradient
-- **Tanh**: $f'(x) = 1 - \tanh^2(x) \leq 1$ — better than sigmoid, still vanishes
-- **GELU**: Smooth approximation of ReLU, used in Transformers (GPT, BERT)
+The sigmoid derivative is elegant: $\sigma'(x) = \sigma(x)(1-\sigma(x))$. If you already know $\sigma(x)$, the derivative costs almost nothing to compute.
 
 ---
 
@@ -176,13 +163,7 @@ $$D_\mathbf{u} f = \nabla f \cdot \mathbf{u} = \|\nabla f\| \cos\theta$$
 
 Maximum when $\mathbf{u} = \frac{\nabla f}{\|\nabla f\|}$ — confirming the gradient is the steepest direction.
 
-### 🔗 ML Connection
-
-The **gradient of the loss w.r.t. parameters** $\nabla_\theta \mathcal{L}$ tells us:
-
-$$\theta \leftarrow \theta - \eta \nabla_\theta \mathcal{L}$$
-
-Each component $\frac{\partial \mathcal{L}}{\partial \theta_i}$ says: "If I increase $\theta_i$ by a tiny amount, the loss changes by this much." Moving opposite to the gradient decreases the loss.
+The negative gradient $-\nabla f$ points toward the steepest decrease. This is the geometric reason why **gradient descent** works — by taking small steps in that direction, you walk downhill on the function surface.
 
 ---
 
@@ -192,17 +173,7 @@ For $\mathbf{f}: \mathbb{R}^n \to \mathbb{R}^m$ (vector-valued function), the **
 
 $$\mathbf{J} = \frac{\partial \mathbf{f}}{\partial \mathbf{x}} = \begin{pmatrix} \partial f_1/\partial x_1 & \cdots & \partial f_1/\partial x_n \\ \vdots & \ddots & \vdots \\ \partial f_m/\partial x_1 & \cdots & \partial f_m/\partial x_n \end{pmatrix} \in \mathbb{R}^{m \times n}$$
 
-The gradient is a special case: when $m=1$, $\mathbf{J} = \nabla f^T$.
-
-### 🔗 ML Connection
-
-The chain rule in multiple dimensions involves Jacobians:
-
-$$\frac{\partial \mathcal{L}}{\partial \mathbf{x}} = \frac{\partial \mathcal{L}}{\partial \mathbf{z}} \cdot \frac{\partial \mathbf{z}}{\partial \mathbf{x}} = \delta^T \mathbf{J}$$
-
-(where $\delta = \partial \mathcal{L}/\partial \mathbf{z}$ is the upstream gradient — the "error signal")
-
-In practice: PyTorch computes **vector-Jacobian products** (VJPs) efficiently without materialising the full Jacobian, which would be $O(n \times m)$ memory.
+The gradient is a special case: when $m=1$, $\mathbf{J} = \nabla f^T$. The Jacobian generalises this to vector-valued functions.
 
 ---
 
@@ -225,11 +196,11 @@ At a critical point ($\nabla f = 0$):
 
 The **condition number** $\kappa = \lambda_{\max}/\lambda_{\min}$ measures curvature anisotropy. Large $\kappa$ → elongated loss bowl → slow gradient descent convergence.
 
-### 🔗 ML Connection
+**Newton's method** uses the Hessian to take curvature-aware steps:
 
-- **Newton's method**: $\theta \leftarrow \theta - \mathbf{H}^{-1} \nabla \mathcal{L}$ — accounts for curvature, converges faster but $O(n^3)$ to invert (infeasible for large $n$)
-- **Adam, Adagrad**: Approximate the diagonal of the Hessian using gradient history — much cheaper
-- **Sharpness-Aware Minimisation (SAM)**: Finds flat minima (small eigenvalues of $H$) → better generalisation
+$$\theta \leftarrow \theta - \mathbf{H}^{-1} \nabla f$$
+
+This converges much faster than gradient descent for smooth functions. The downside is inverting $\mathbf{H}$ costs $O(n^3)$, which is infeasible for large problems.
 
 ---
 
@@ -279,26 +250,17 @@ A function $f$ is **convex** if for all $\mathbf{x}, \mathbf{y}$ and $\lambda \i
 
 $$f(\lambda \mathbf{x} + (1-\lambda)\mathbf{y}) \leq \lambda f(\mathbf{x}) + (1-\lambda)f(\mathbf{y})$$
 
-- **Convex**: Logistic regression, linear regression — every local minimum is global
-- **Non-convex**: Neural networks — many local minima and saddle points
+- **Convex**: Every local minimum is a global minimum — gradient descent is guaranteed to find it
+- **Non-convex**: Multiple local minima and saddle points may exist
 
 ### Types of Critical Points (where $\nabla f = 0$)
 
-| Type | Gradient | Hessian Eigenvalues | Training Behaviour |
-|------|----------|--------------------|--------------------|
-| Global minimum | $\mathbf{0}$ | All positive | Best possible |
-| Local minimum | $\mathbf{0}$ | All positive | May not generalise as well |
-| Saddle point | $\mathbf{0}$ | Mixed signs | Gradient descent escapes with noise |
-| Maximum | $\mathbf{0}$ | All negative | Never found in practice |
-
-### 🔗 ML Connection
-
-**Neural networks rarely get stuck in local minima**. Research shows:
-1. In high dimensions, most critical points are saddle points (not minima)
-2. Local minima tend to be "approximately global" for large networks
-3. **Flat minima generalise better** — the model is less sensitive to small parameter perturbations
-
-SGD noise and BatchNorm help escape sharp minima and find flat ones.
+| Type | Gradient | Hessian Eigenvalues |
+|------|----------|---------------------|
+| Global minimum | $\mathbf{0}$ | All positive |
+| Local minimum | $\mathbf{0}$ | All positive |
+| Saddle point | $\mathbf{0}$ | Mixed signs |
+| Maximum | $\mathbf{0}$ | All negative |
 
 ---
 
@@ -330,17 +292,17 @@ The error signal $\boldsymbol{\delta}^{(l)}$ propagates **backward** through the
 
 - **Step decay**: Multiply by $\gamma$ every $k$ epochs
 - **Cosine annealing**: $\eta_t = \eta_{\min} + \frac{1}{2}(\eta_{\max} - \eta_{\min})(1 + \cos(\pi t/T))$
-- **Warmup**: Start with small LR, ramp up, then decay — used in Transformers
+- **Warmup**: Start with a small learning rate, ramp it up, then decay
 
 ### Why Warmup?
 
-At initialisation, gradients are noisy and parameter estimates are poor. A large initial learning rate can cause catastrophic loss spikes. Warmup lets the model "settle in" before taking large steps.
+At the start of training, gradients are noisy and parameter estimates are poor. A large initial learning rate can cause the optimisation to overshoot badly. Starting with a small rate and increasing it gradually gives the algorithm time to settle before taking larger steps.
 
 ### Gradient Clipping
 
 $$\text{if } \|\mathbf{g}\|_2 > \tau: \quad \mathbf{g} \leftarrow \frac{\tau}{\|\mathbf{g}\|_2} \mathbf{g}$$
 
-Prevents exploding gradients in RNNs/Transformers during early training.
+If the gradient becomes very large, it is rescaled to have norm exactly $\tau$. This prevents a single bad update from ruining the optimisation.
 
 ---
 
