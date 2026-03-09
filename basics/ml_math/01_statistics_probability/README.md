@@ -126,7 +126,7 @@ $$\text{Cov}(X, Y) = \mathbb{E}[(X - \mu_X)(Y - \mu_Y)]$$
 - $\text{Cov}(X, Y) < 0$: When $X$ increases, $Y$ tends to decrease (one above, one below their means)
 - $\text{Cov}(X, Y) = 0$: No linear relationship
 
-**Problem with raw covariance**: It's in units of $[\text{unit of X}] \times [\text{unit of Y}}]$, which makes it impossible to compare across different pairs of variables.
+**Problem with raw covariance**: It's in units of $[\text{unit of X}] \times [\text{unit of Y}]$, which makes it impossible to compare across different pairs of variables.
 
 ### Correlation (Pearson)
 
