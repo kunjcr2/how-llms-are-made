@@ -9,3 +9,5 @@ So this is the property where we Assume or sometimes even prove that to get the 
 Conffusin, right ? In chess, we dont need to know what happened in past, our current state is enough to do actions on the state while being in a middle of a conversation with someone, we need to know past conversation.
 
 And the processes that holds this property of not needing to knowall the past states, are called _Markov Decicion Property_ !
+
+Next is [Value Function](ValueFunctions.md)

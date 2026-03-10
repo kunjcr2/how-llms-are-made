@@ -1,8 +1,8 @@
 # RL Fundamentals
 
-Supervised Learning - Data and labels
-Unsupervised Learning - Not labeled - clustering of data and such
-Reinforcement learning - Models learn from interactions with the evironment
+1. Supervised Learning - Data and labels
+2. Unsupervised Learning - Not labeled - clustering of data and such
+3. Reinforcement learning - Models learn from interactions with the evironment
 
 Both top 2 learning generalize to a particuar environment but NOT RL.
 
@@ -20,3 +20,5 @@ AlphaGo, AlphaZero - A goal is there
 **Exploitation** vs **Exploration**: First means that we select the state where value function's value is highest. Second means we deliberately choose the one with "non-highest" state cuz we wanna explore other states as well.
 
 - Wee change the value function values based on next value by backpropogating. IF we can win a tic tac toe game by placing X at a specific place then value function for that state will go UP as it is a winning position. And decrease where we can loose.
+
+Next is [Markov Decision Process](MarkovDecisionProcess.md)

@@ -47,3 +47,5 @@ Estimating the value function is often referred to as the **prediction problem**
 The Model of the environment is defined by the necessary information to determine the dynamics of the system, primarily requiring knowledge of the **transition probabilities** from one state ($S$) to the next state ($S'$) [77, 78, 55:49].
 
 RL methods are categorized based on whether they use or require a model: Model-Based or Model-Free.
+
+Next is [Dynamic Programming](DynamicProgramming.md)
