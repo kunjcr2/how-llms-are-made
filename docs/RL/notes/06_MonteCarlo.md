@@ -1,252 +1,197 @@
 # Monte Carlo Methods
 
-Monte Carlo (MC) methods are our first **learning-based** approach to reinforcement learning. Unlike Dynamic Programming, they **do not require a model of the environment**.
+Monte Carlo (MC) methods are the first **learning-based** approach in RL. The key shift from Dynamic Programming: instead of needing a perfect model of the environment, the agent **learns by doing**—running episodes, observing what happens, and averaging up the results.
+
+> **Analogy:** DP is like a chess grandmaster who has memorized every possible board position. MC is like a player who has never read a book but has played 10,000 games—they learn what positions tend to win by *experiencing* wins and losses, not from a formula.
 
 ---
 
-## Why Monte Carlo?
+## Why MC? (The Gap DP Leaves)
 
-### Dynamic Programming Limitation
-In DP, we need to know the transition probabilities $P(s', r | s, a)$ — the complete model of the environment.
+DP requires knowing $P(s', r \mid s, a)$—the exact probability of every transition. That's fine on paper but almost impossible in practice:
 
-**Problem**: In most real-world cases, you don't have this model!
-- Teaching an agent to play chess: How do you know exact probabilities before playing?
-- Mars Rover: You don't know the Martian environment until you experience it
+- **Chess:** You can't pre-compute every outcome before playing a single game.
+- **Robotics:** The robot must learn what "slippery floor" means by slipping.
+- **Finance:** Market dynamics aren't given to you by a textbook.
 
-### Monte Carlo Solution
-Instead of requiring a model, MC methods **learn from experience**:
-- Interact with the environment
-- Observe what happens
-- Update estimates based on actual outcomes
-
-> **Key Insight**: Monte Carlo methods require only **experience** — no prior knowledge of environment dynamics.
+MC's answer: **skip the model entirely**. Run episodes, measure the actual return from each state, and average. The Law of Large Numbers guarantees these averages converge to the true $V_\pi(s)$.
 
 ---
 
-## MC vs Dynamic Programming
+## The Core Idea: Average Actual Returns
 
-| Aspect | Dynamic Programming | Monte Carlo |
-|--------|---------------------|-------------|
-| **Model Required?** | ✅ Yes (transition probabilities) | ❌ No |
-| **Learning Type** | Mathematical computation | Learning from experience |
-| **When to Use** | Known environment model | Unknown environment |
-| **Bootstrapping** | ✅ Yes | ❌ No |
-| **Update Timing** | Iterative sweeps | After episode completion |
+For any state $s$, the true value $V_\pi(s)$ is the *expected* return starting from $s$ under policy $\pi$. MC estimates this by taking the *empirical* mean:
 
----
+$$V(s) \approx \frac{1}{N} \sum_{i=1}^{N} G_i^{(s)}$$
 
-## How Monte Carlo Works
+where $G_i^{(s)}$ is the actual discounted return observed from state $s$ in episode $i$.
 
-### The Core Idea
-
-1. **Generate episodes** by interacting with the environment
-2. For each state visited, calculate the **actual return** (sum of rewards until episode ends)
-3. **Average** these returns across many episodes
-4. The average converges to the **true value function**
-
-### Example: Grid World
-
-```
-┌───┬───┬───┬───┐
-│ S │   │   │   │    S = Start
-├───┼───┼───┼───┤    G = Goal
-│   │ X │   │   │    X = Obstacle
-├───┼───┼───┼───┤
-│   │   │   │   │
-├───┼───┼───┼───┤
-│   │   │   │ G │
-└───┴───┴───┴───┘
-```
-
-**Episode 1**: S → right → down → hit X (negative reward) → ... → G
-**Episode 2**: S → down → down → right → ... → G
-
-For each state visited, calculate the return from that state to the goal, then average across episodes.
+More episodes → better estimate. Simple, but powerful.
 
 ---
 
-## Monte Carlo Prediction
+## MC Prediction (Estimating $V_\pi$)
 
-**Goal**: Given a policy π, estimate the value function $V_\pi(s)$ for all states.
+**Goal:** Evaluate a fixed policy $\pi$ — how good is each state under this policy?
 
-### Algorithm
+**Algorithm — First-Visit MC:**
 
 ```
 Initialize:
-    Returns(s) ← empty list, for all states s
-    V(s) ← 0, for all states s
+    Returns(s) ← empty list, for all s
+    V(s) ← 0, for all s
 
-For each episode:
-    Generate episode following policy π
-    
-    For each state s in episode:
-        G ← return from state s to end of episode
-        Append G to Returns(s)
-        V(s) ← average(Returns(s))
+Loop (for each episode):
+    Generate a full episode: S₀, A₀, R₁, S₁, A₁, R₂, ..., Sₜ
+    G ← 0
+
+    For t = T-1 downto 0:
+        G ← γ·G + Rₜ₊₁                    ← accumulate discounted return (backwards)
+        If Sₜ not visited earlier in episode:
+            Append G to Returns(Sₜ)
+            V(Sₜ) ← mean(Returns(Sₜ))
 ```
 
-### Update Rule
+**Why backwards?** Walking the episode in reverse lets us compute each state's return in one pass — no need to re-sum rewards from scratch for every state.
 
-After each episode, for each visited state:
+**First-visit vs Every-visit:**
+- **First-visit MC**: Only counts $s$ the first time it appears in an episode. Unbiased, widely used.
+- **Every-visit MC**: Counts every visit. Biased for finite samples, but often lower variance in practice.
 
-$$V(S) = \frac{1}{N} \sum_{i=1}^{N} G_i$$
-
-Where $N$ is the number of times state $S$ was visited across all episodes.
+> **Key constraint:** MC requires **complete episodes**. You must reach a terminal state before updating anything. This makes it unsuitable for continuous (non-episodic) tasks.
 
 ---
 
-## Action Value Functions (Q-values)
+## Why Q-values, Not Just V?
 
-### Why Q-values?
+State values $V(s)$ answer: *"How good is this state?"*
 
-State value $V(s)$ tells us: "How good is this state?"
+But to **improve a policy**, you need: *"Which action should I take from this state?"*
 
-But we need: "Which action should I take?"
+Without a model, you can't derive the best action from $V(s)$ alone—you'd need $P(s', r \mid s, a)$ to compare actions. So MC focuses on **action-values**:
 
-**Action value function** $Q(s, a)$ answers: "How good is taking action $a$ in state $s$?"
+$$Q(s, a) = \text{expected return starting from } s, \text{ taking action } a, \text{ then following } \pi$$
 
-### Estimating Q-values
-
-Same as V(s), but track state-action pairs:
+Same algorithm, but track $(s, a)$ pairs instead of just $s$:
 
 ```
-For each episode:
-    For each (state, action) pair in episode:
-        G ← return from that point to end
-        Append G to Returns(s, a)
-        Q(s, a) ← average(Returns(s, a))
+For each (state, action) pair in episode:
+    G ← return from that point to episode end
+    Append G to Returns(s, a)
+    Q(s, a) ← mean(Returns(s, a))
 ```
+
+Once you have $Q$, the greedy policy is trivially: $\pi(s) = \arg\max_a Q(s, a)$ — no model needed.
 
 ---
 
-## Monte Carlo Control
+## MC Control (Finding the Optimal Policy)
 
-**Goal**: Find the optimal policy.
-
-### Policy Iteration (MC Version)
+Combine prediction and improvement in a loop, just like policy iteration in DP:
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  1. Start with arbitrary policy π₀                      │
-│                          ↓                               │
-│  2. Policy Evaluation: Estimate Q_π using MC             │
-│                          ↓                               │
-│  3. Policy Improvement: π(s) = argmax_a Q(s,a)          │
-│                          ↓                               │
-│  4. Repeat until convergence                             │
-└─────────────────────────────────────────────────────────┘
+Start with any policy π₀
+        │
+        ▼
+┌─────────────────────────────────┐
+│  MC Prediction                  │  ← Run episodes, estimate Q_π
+│  (many episodes)                │
+└───────────────┬─────────────────┘
+                │
+                ▼
+┌─────────────────────────────────┐
+│  Policy Improvement             │  ← π(s) = argmax_a Q(s, a)
+└───────────────┬─────────────────┘
+                │
+        Policy stable? ──── No ──→ (loop back)
+                │
+               Yes
+                ▼
+           π* found ✓
 ```
+
+The guarantee: each improvement step makes the policy at least as good (Policy Improvement Theorem holds here too). With enough episodes, this converges to $\pi^*$.
 
 ---
 
 ## The Exploration Problem
 
-### The Issue
-If we always take the "best" action (greedy), we might never explore other options!
+There's a catch: if the policy always picks the greediest action, some state-action pairs will **never be visited** and their Q-values will never be updated.
 
-**Example**: 
-- State S has actions: Up, Down, Left, Right
-- First episode: Up gives reward +5
-- Agent always picks Up, never tries other actions
-- But maybe Right gives +10!
+**Example:** State $S$ has actions Up, Down, Left, Right. First episode: Up gives +5. The greedy policy locks onto Up forever. But Right might give +10—we'll never know.
 
-### Solution: Epsilon-Greedy Policy
+### Solution 1: Exploring Starts
+Randomly initialize the starting $(s_0, a_0)$ pair each episode so every pair eventually gets sampled. Works in theory, impractical in real environments where you can't force arbitrary starts.
 
-With probability $\epsilon$: take **random** action (explore)
-With probability $1-\epsilon$: take **best** action (exploit)
+### Solution 2: ε-Greedy (Practical)
 
 ```python
 def epsilon_greedy(Q, state, epsilon):
     if random() < epsilon:
-        return random_action()      # Explore
+        return random_action()      # Explore — try something new
     else:
-        return argmax(Q[state])     # Exploit
+        return argmax(Q[state])     # Exploit — use current best knowledge
 ```
 
-### Why It Works
+With probability $\epsilon$ the agent tries a random action; otherwise it acts greedily. This ensures every action gets visited infinitely often (in the limit), satisfying the **requirement for convergence**.
 
-From multi-armed bandit experiments:
+**Tuning $\epsilon$:**
 
-| Policy | Long-term Performance |
-|--------|----------------------|
-| Greedy (ε=0) | Poor — misses better options |
-| ε=0.1 | Best — balances exploration/exploitation |
-| ε=0.5 | Moderate — too much random exploration |
+| ε value | Behavior |
+|---------|----------|
+| 0 (pure greedy) | Converges fast but gets stuck in local optima |
+| 0.1 | Good balance — standard starting point |
+| 0.5+ | Too much noise, slow convergence |
+
+> A common trick: **decay ε over time** — explore heavily early on, exploit more as Q-values stabilize.
 
 ---
 
 ## On-Policy vs Off-Policy
 
-### On-Policy
-- The policy we're **optimizing** = the policy **generating data**
-- Agent learns from its own experience
-- Example: ε-greedy MC Control
+| | On-Policy | Off-Policy |
+|---|---|---|
+| **Data source** | The policy being improved | A separate *behavior* policy μ |
+| **Example** | ε-greedy MC control | Learning from human demos |
+| **Pros** | Simple, stable | Can reuse old data; can learn optimal while exploring |
+| **Cons** | Must balance explore/exploit in the same policy | Requires importance sampling correction |
 
-### Off-Policy
-- **Behavior policy** (μ): generates the data
-- **Target policy** (π): the one we want to optimize
-- Agent learns from someone else's experience
+### Off-Policy: Importance Sampling
 
-### Importance Sampling
+When the behavior policy $\mu$ and target policy $\pi$ disagree on probabilities, raw returns are biased. We correct with the **importance sampling ratio**:
 
-When using off-policy, we need to adjust for the probability difference:
+$$\rho_t = \prod_{k=t}^{T-1} \frac{\pi(A_k \mid S_k)}{\mu(A_k \mid S_k)}$$
 
-$$\text{Importance Sampling Ratio} = \frac{\pi(a|s)}{\mu(a|s)}$$
+Intuitively: if $\pi$ would have taken the same actions as $\mu$, $\rho = 1$ (no correction needed). If $\pi$ is much more likely to take those actions, the return counts more. If much less likely, it counts less.
 
-If target policy is 10x more likely to take action $a$, then the return should be weighted 10x more.
+**Two flavors:**
+- **Ordinary IS:** Average weighted returns. Unbiased, but can have very high variance.
+- **Weighted IS:** Normalize by sum of weights. Biased but drastically lower variance — usually preferred in practice.
 
 ---
 
 ## Connection to Multi-Armed Bandits
 
-Monte Carlo is like having **multiple bandits** — one for each state!
+MC is the natural extension of multi-armed bandits to sequential decision-making:
 
 | Multi-Armed Bandit | Monte Carlo |
 |-------------------|-------------|
-| 1 state, K actions | N states, K actions each |
-| Pull lever → get reward | Take action → observe return |
-| Average rewards per lever | Average returns per state-action |
-| ε-greedy for exploration | ε-greedy for exploration |
+| Single state, $K$ levers | $N$ states, $K$ actions each |
+| Pull lever → immediate reward | Take action → episode return |
+| Average rewards per lever | Average returns per $(s, a)$ |
+| ε-greedy exploration | ε-greedy exploration |
 
----
-
-## Interactive Simulation Example
-
-For a 4×4 grid with goal (+reward) and obstacle (-reward):
-
-1. **Initialize** Q-table with zeros (16 states × 4 actions = 64 values)
-2. **Generate episode** following ε-greedy policy
-3. **Update Q-values** for each (state, action) visited:
-   - Calculate return from that point
-   - Average with previous returns
-4. **Update policy**: For each state, pick action with max Q-value
-5. **Repeat** — colors stabilize as Q-values converge to true values
-
----
-
-## Key Takeaways
-
-1. **No model required**: MC learns from experience, not environment dynamics
-
-2. **Episode-based updates**: Must wait until episode ends to calculate returns
-
-3. **Averaging returns**: Value estimates = average of observed returns
-
-4. **Exploration is critical**: Use ε-greedy to ensure all actions are tried
-
-5. **Q-values for control**: Action values let us determine optimal policy
-
-6. **On-policy vs Off-policy**: Whether learning from own experience or others'
+The difference: in bandits, one pull = one data point. In MC, one episode gives data points for every state-action pair visited along the way.
 
 ---
 
 ## Limitations
 
-| Limitation | Description |
-|------------|-------------|
-| **Episodic only** | Must have episodes that terminate |
-| **High variance** | Returns can vary wildly between episodes |
-| **Slow convergence** | Need many episodes to get accurate estimates |
-| **Wait for episode end** | Cannot update mid-episode |
+| Limitation | Why It Matters |
+|------------|----------------|
+| **Episodic only** | Can't apply to continuous tasks (e.g., ongoing stock trading) |
+| **High variance** | A single unlucky episode can swing estimates wildly |
+| **Slow to propagate** | State A's value can't improve until an episode *starting from A* completes |
+| **Waits for episode end** | No mid-episode updates — wastes information available earlier |
 
-> **Next**: Temporal Difference methods combine MC (learning from experience) with DP (bootstrapping) — best of both worlds!
+> **Up next:** Temporal Difference methods fix the last two problems. They **bootstrap**—updating value estimates mid-episode using other estimates, like DP—while still learning from experience, like MC. Best of both worlds.
