@@ -10,4 +10,3 @@ Conffusin, right ? In chess, we dont need to know what happened in past, our cur
 
 And the processes that holds this property of not needing to knowall the past states, are called _Markov Decicion Property_ !
 
-Next is [Value Function](ValueFunctions.md)
