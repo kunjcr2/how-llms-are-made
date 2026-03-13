@@ -12,7 +12,10 @@ TD Update Rule:
 
 Two algorithms implemented here:
     1. TD(0) Prediction  – estimates V(s) for a fixed policy
-    2. SARSA (TD Control) – learns an optimal policy via Q(s, a) updates
+    2. SARSA (TD Control) – learns an optimal policy via Q(s, a) updates, S A R S' A'
+
+SARSA Update rule:
+    Q(S, A) <- Q(S, A) + alpha * [R + gamma * Q(S', A') - Q(S, A)]
 """
 
 import numpy as np
@@ -116,7 +119,7 @@ def sarsa_update(Q, state, action, reward, next_state, next_action, alpha, gamma
     return Q
 
 
-def sarsa_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.2):
+def sarsa_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.2, grid_size=4):
     """
     4x4 grid: Start at (0,0), Goal at (3,3).
     Actions: 0=up, 1=right, 2=down, 3=left.
@@ -129,7 +132,8 @@ def sarsa_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.2):
       - Update Q(S, A) with the SARSA rule
       - S ← S', A ← A'
     """
-    Q = np.zeros((16, 4))
+    GRID_SIZE = grid_size
+    Q = np.zeros((GRID_SIZE*GRID_SIZE, 4))
     episode_lengths = []
 
     for ep in range(num_episodes):
@@ -138,7 +142,7 @@ def sarsa_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.2):
         steps  = 0
 
         while True:
-            next_state, reward, done = step(state, action)
+            next_state, reward, done = step(state, action, GRID_SIZE)
             next_action = epsilon_greedy(Q, next_state, epsilon)
 
             Q = sarsa_update(Q, state, action, reward, next_state, next_action,
@@ -162,8 +166,8 @@ def sarsa_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.2):
     print(f"Q(state=14, right): {Q[14, 1]:.3f}  (one step from goal)")
     print(f"\nBest action per state (0=up, 1=right, 2=down, 3=left):")
     action_names = ["up", "right", "down", "left"]
-    for s in range(16):
-        row, col = divmod(s, 4)
+    for s in range(Q.shape[0]):
+        row, col = divmod(s, GRID_SIZE)
         best = int(np.argmax(Q[s]))
         print(f"  state ({row},{col}): {action_names[best]}")
 
@@ -175,10 +179,10 @@ def sarsa_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.2):
 # ============================================================================
 
 if __name__ == "__main__":
-    print("=== TD(0) Prediction (random policy) ===")
-    V = td0_prediction(num_episodes=1000, alpha=0.1, gamma=0.9)
-    print("State values (0=top-left, 15=goal):")
-    print(V.reshape(4, 4).round(2))
+    # print("=== TD(0) Prediction (random policy) ===")
+    # V = td0_prediction(num_episodes=1000, alpha=0.1, gamma=0.9)
+    # print("State values (0=top-left, 15=goal):")
+    # print(V.reshape(4, 4).round(2))
 
-    # print("\n=== SARSA Control ===")
-    # sarsa_example(num_episodes=1000, alpha=0.1, gamma=0.9, epsilon=0.2)
+    print("\n=== SARSA Control ===")
+    sarsa_example(num_episodes=1000, alpha=0.1, gamma=0.9, epsilon=0.2, grid_size=4)
