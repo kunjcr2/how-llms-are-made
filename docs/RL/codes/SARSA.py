@@ -1,24 +1,22 @@
-r"""
-Q-Learning (Off-Policy TD Control) Implementation
+'''
+SARSA (TD Control) Implementation
 
-Q-Learning: Learn the optimal policy off-policy.
+SARSA: On-policy TD Control.
 - Q(S, A): Expected cumulative reward for action A in state S
-- Goal: Learn Q-values to find the optimal policy regardless of the agent's exploratory actions.
+- Goal: Learn Q-values to find the optimal policy while exploring.
 
-Core idea: Q(S, A) is updated using the maximum possible Q-value of the next state,
-meaning it assumes the agent will take the *best* action next, even if it actually exploring.
+Core idea: Q(S, A) is updated using the Q-value of the next state and the actual next action chosen by the current policy.
 
 Update rule:
-    Q(S, A) ← Q(S, A) + α * [ R + γ * max_a Q(S', a) - Q(S, A) ]
-                             \_______ TD Target _______/
-"""
+    Q(S, A) <- Q(S, A) + alpha * [R + gamma * Q(S', A') - Q(S, A)]
+                                  |____ TD Target ____|
+'''
 
 import numpy as np
 
 # ============================================================================
 # CLIFF WALKING ENVIRONMENT (4x12 Grid)
 # ============================================================================
-# A classic environment to show how Q-Learning differs from SARSA.
 # Start: Bottom-Left (3, 0)
 # Goal: Bottom-Right (3, 11)
 # Cliff: Bottom row, columns 1 to 10. Stepping here = -100 reward and reset to Start.
@@ -29,7 +27,7 @@ ROWS = 4
 COLS = 12
 START_STATE = 3 * COLS + 0     # 36
 GOAL_STATE = 3 * COLS + 11     # 47
-CLIFF_STATES = set(range(START_STATE+1, GOAL_STATE)) # START_STATE+1 to GOAL_STATE-1
+CLIFF_STATES = set(range(START_STATE+1, GOAL_STATE))
 
 def step(state, action):
     row, col = divmod(state, COLS)
@@ -42,12 +40,12 @@ def step(state, action):
     next_state = row * COLS + col
 
     if next_state in CLIFF_STATES:
-        return START_STATE, -100, False  # Fall off cliff: -100 reward, go back to start
+        return START_STATE, -100, False  # Fall off cliff
     
     if next_state == GOAL_STATE:
-        return next_state, -1, True      # Reach goal: -1 reward, episode ends
+        return next_state, -1, True      # Reach goal
 
-    return next_state, -1, False         # Normal step: -1 reward, episode continues
+    return next_state, -1, False         # Normal step
 
 
 def epsilon_greedy(Q, state, epsilon):
@@ -58,34 +56,21 @@ def epsilon_greedy(Q, state, epsilon):
 
 
 # ============================================================================
-# Q-LEARNING ALGORITHM
+# SARSA ALGORITHM
 # ============================================================================
 
-def q_learning_update(Q, state, action, reward, next_state, alpha, gamma, done):
+def sarsa_update(Q, state, action, reward, next_state, next_action, alpha, gamma, done):
     """
-    One Q-Learning update step.
-
-    Q-learning update rule:
-        Q(S, A) ← Q(S, A) + α * [ R + γ * max_a Q(S', a) - Q(S, A) ]
-
-    'Off-policy': The TD target uses the maximum Q-value of the next state,
-    assuming the greedy (best) action is taken next, even though the actual action 
-    we might take next in the loop is exploratory (epsilon-greedy).
+    One SARSA update step.
+    'On-policy': the next action A' is sampled from the same policy being improved.
     """
-    # max_a Q(S', a) is the best future value we can hope for from the next state
-    best_next_value = np.max(Q[next_state]) # main point that makes it different
-    
-    td_target = reward + gamma * best_next_value * (not done)
-    td_error = td_target - Q[state, action]
+    td_target = reward + gamma * Q[next_state, next_action] * (not done)
+    td_error  = td_target - Q[state, action]
     Q[state, action] += alpha * td_error
-    
     return Q
 
 
-def q_learning_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.1):
-    """
-    Runs Q-Learning on the Cliff Walking environment.
-    """
+def sarsa_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.1):
     Q = np.zeros((ROWS * COLS, 4))
     rewards_per_episode = []
 
@@ -108,25 +93,23 @@ def q_learning_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.1):
     print()
 
     for ep in range(num_episodes):
-        state = START_STATE
+        state  = START_STATE
+        action = epsilon_greedy(Q, state, epsilon)
         total_reward = 0
 
         while True:
-            # 1. Choose A from S using policy derived from Q (epsilon-greedy)
-            action = epsilon_greedy(Q, state, epsilon)
-            
-            # 2. Take action A, observe R, S'
             next_state, reward, done = step(state, action)
-            
-            # 3. Update Q(S,A) using Q-Learning rule
-            Q = q_learning_update(Q, state, action, reward, next_state, alpha, gamma, done)
-            
-            state = next_state
+            next_action = epsilon_greedy(Q, next_state, epsilon)
+
+            Q = sarsa_update(Q, state, action, reward, next_state, next_action, alpha, gamma, done)
+
+            state  = next_state
+            action = next_action
             total_reward += reward
 
             if done:
                 break
-                
+
         rewards_per_episode.append(total_reward)
 
         if (ep + 1) % 100 == 0:
@@ -135,7 +118,6 @@ def q_learning_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.1):
 
     print("\n--- Training complete ---")
     
-    # Print the learned optimal policy visually
     print("\nLearned Optimal Policy (0=↑, 1=→, 2=↓, 3=←):")
     action_chars = ['↑', '→', '↓', '←']
     for r in range(ROWS):
@@ -157,5 +139,5 @@ def q_learning_example(num_episodes=500, alpha=0.1, gamma=0.9, epsilon=0.1):
 
 
 if __name__ == "__main__":
-    print("=== Q-Learning on Cliff Walking (4x12) ===")
-    q_learning_example(num_episodes=500, alpha=0.1, gamma=1.0, epsilon=0.1)
+    print("=== SARSA on Cliff Walking (4x12) ===")
+    sarsa_example(num_episodes=500, alpha=0.1, gamma=1.0, epsilon=0.1)
