@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SARSA vs Q-Learning</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --grid-line: #334155;
+            --cell-normal: #1e293b;
+            --cell-start: #3b82f6;
+            --cell-goal: #10b981;
+            --cell-cliff: #ef4444;
+            --agent-color: #fbbf24;
+            
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow-primary: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+            overflow-x: hidden;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-primary);
+        }
+
+        .visualization-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls-panel {
+            width: 100%;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 4px;
+            background-color: var(--grid-line);
+            border: 4px solid var(--grid-line);
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            position: relative;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            background-color: var(--cell-normal);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .cell.start { background-color: rgba(59, 130, 246, 0.2); border: 2px solid var(--cell-start); }
+        .cell.goal { background-color: rgba(16, 185, 129, 0.2); border: 2px solid var(--cell-goal); }
+        .cell.cliff { background-color: rgba(239, 68, 68, 0.1); border: 1px dashed var(--cell-cliff); }
+        
+        /* Q-value intensity coloring */
+        .cell .intensity {
+            position: absolute;
+            inset: 0;
+            background-color: var(--accent-green);
+            opacity: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .cell .arrows {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+        }
+
+        .arrow {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 10px;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+        .arrow.best {
+            color: white;
+            text-shadow: 0 0 5px rgba(255,255,255,0.8);
+            font-size: 14px;
+        }
+
+        .arrow-up { top: 2px; left: 50%; transform: translateX(-50%); }
+        .arrow-right { right: 2px; top: 50%; transform: translateY(-50%); }
+        .arrow-down { bottom: 2px; left: 50%; transform: translateX(-50%); }
+        .arrow-left { left: 2px; top: 50%; transform: translateY(-50%); }
+
+        .agent {
+            width: 30px;
+            height: 30px;
+            background-color: var(--agent-color);
+            border-radius: 50%;
+            position: absolute;
+            z-index: 10;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 0 15px var(--agent-color);
+            display: none;
+            /* Flex center for face */
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        select, input[type="range"], input[type="number"] {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--grid-line);
+            background: rgba(15, 23, 42, 0.8);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--accent-blue);
+        }
+        
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .slider-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            width: 40px;
+            text-align: right;
+            color: var(--accent-blue);
+        }
+
+        .btn {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-success {
+            background: var(--accent-green);
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .stats-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .stat-box {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            border: 1px solid var(--grid-line);
+        }
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-main);
+            margin-top: 0.25rem;
+        }
+
+        .explanation {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border-left: 4px solid var(--accent-blue);
+            margin-top: 1rem;
+        }
+
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--grid-line);
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+            display: none;
+            color: #fff;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>RL Visualizer: SARSA & Q-Learning</h1>
+        <p class="subtitle">Experience the "Cliff Walking" environment. Observe how Q-Learning (Off-Policy) learns the risky optimal path along the cliff edge, while SARSA (On-Policy) takes a safer, longer route.</p>
+    </header>
+
+    <div class="container">
+        <!-- Controls Panel -->
+        <div class="panel controls-panel">
+            <div class="control-group">
+                <label for="algorithm">Algorithm</label>
+                <select id="algorithm">
+                    <option value="qlearning">Q-Learning (Off-Policy Default)</option>
+                    <option value="sarsa">SARSA (On-Policy Safe)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Alpha (Learning Rate)</label>
+                <div class="slider-row">
+                    <input type="range" id="alpha" min="0.01" max="1" step="0.01" value="0.1">
+                    <span class="slider-value" id="alpha-val">0.10</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Gamma (Discount Factor)</label>
+                <div class="slider-row">
+                    <input type="range" id="gamma" min="0.5" max="1" step="0.01" value="1.0">
+                    <span class="slider-value" id="gamma-val">1.00</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Epsilon (Exploration Rate)</label>
+                <div class="slider-row">
+                    <input type="range" id="epsilon" min="0" max="1" step="0.01" value="0.1">
+                    <span class="slider-value" id="epsilon-val">0.10</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Episodes per click</label>
+                <input type="number" id="episodes" min="1" max="5000" value="500">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                <button class="btn" id="btn-train">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Train Model
+                </button>
+                <button class="btn btn-secondary" id="btn-reset">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                    Reset Q-Table
+                </button>
+                <button class="btn btn-success" id="btn-run-policy">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    Watch Trained Agent
+                </button>
+            </div>
+
+            <div class="explanation" id="explanation-text">
+                <strong>Q-Learning</strong> evaluates the greedy policy (taking the absolute best action) while moving using an epsilon-greedy policy. Because it assumes it will take the best action moving forward, it learns the shortest path along the cliff edge.
+            </div>
+        </div>
+
+        <!-- Visualization Panel -->
+        <div class="panel visualization-panel">
+            <div class="stats-panel" style="width: 100%; margin-top: 0;">
+                <div class="stat-box">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Total Episodes</div>
+                    <div class="stat-value" id="stat-episodes">0</div>
+                </div>
+                <div class="stat-box">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Avg Reward (last 100)</div>
+                    <div class="stat-value" id="stat-reward">0</div>
+                </div>
+            </div>
+
+            <div class="grid-container" id="grid">
+                <!-- Cells generated by JS -->
+                <div class="agent" id="agent">🤖</div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(59, 130, 246, 0.4); border: 1px solid var(--cell-start);"></div>
+                    <span>Start</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(16, 185, 129, 0.4); border: 1px solid var(--cell-goal);"></div>
+                    <span>Goal</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(239, 68, 68, 0.3); border: 1px dashed var(--cell-cliff);"></div>
+                    <span>Cliff</span>
+                </div>
+            </div>
+            
+            <p style="text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem;">
+                Hover over a cell to see exact Q-Values. Arrows indicate the greedy action for that state.
+            </p>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // --- Environment Setup ---
+        const ROWS = 4;
+        const COLS = 12;
+        const NUM_STATES = ROWS * COLS;
+        const NUM_ACTIONS = 4; // 0: Up, 1: Right, 2: Down, 3: Left
+        
+        const START_STATE = 3 * COLS + 0; // 36
+        const GOAL_STATE = 3 * COLS + 11; // 47
+        const CLIFF_STATES = new Set(Array.from({length: 10}, (_, i) => START_STATE + 1 + i)); // 37 to 46
+        
+        // Q-Table: [NUM_STATES][NUM_ACTIONS]
+        let Q = Array.from({length: NUM_STATES}, () => Array(NUM_ACTIONS).fill(0.0));
+        let totalEpisodes = 0;
+        let recentRewards = [];
+
+        // DOM Elements
+        const gridEl = document.getElementById('grid');
+        const agentEl = document.getElementById('agent');
+        const cells = [];
+        const tooltip = document.getElementById('tooltip');
+
+        // Init Grid UI
+        function createGrid() {
+            gridEl.innerHTML = ''; // clear
+            gridEl.appendChild(agentEl);
+            
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    let s = r * COLS + c;
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    if (s === START_STATE) cell.classList.add('start');
+                    if (s === GOAL_STATE) cell.classList.add('goal');
+                    if (CLIFF_STATES.has(s)) cell.classList.add('cliff');
+
+                    // Intensity background
+                    let intensity = document.createElement('div');
+                    intensity.className = 'intensity';
+                    cell.appendChild(intensity);
+
+                    // Arrows
+                    const arrowUp = document.createElement('div'); arrowUp.className = 'arrow arrow-up'; arrowUp.innerHTML = '▲';
+                    const arrowRight = document.createElement('div'); arrowRight.className = 'arrow arrow-right'; arrowRight.innerHTML = '▶';
+                    const arrowDown = document.createElement('div'); arrowDown.className = 'arrow arrow-down'; arrowDown.innerHTML = '▼';
+                    const arrowLeft = document.createElement('div'); arrowLeft.className = 'arrow arrow-left'; arrowLeft.innerHTML = '◀';
+                    
+                    if(s !== GOAL_STATE && !CLIFF_STATES.has(s)) {
+                        cell.appendChild(arrowUp);
+                        cell.appendChild(arrowRight);
+                        cell.appendChild(arrowDown);
+                        cell.appendChild(arrowLeft);
+                    }
+
+                    // Hover events for tooltip
+                    cell.addEventListener('mouseenter', (e) => showTooltip(e, s));
+                    cell.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+                    cell.addEventListener('mousemove', moveTooltip);
+
+                    gridEl.appendChild(cell);
+                    cells.push({
+                        element: cell,
+                        intensity: intensity,
+                        arrows: [arrowUp, arrowRight, arrowDown, arrowLeft]
+                    });
+                }
+            }
+        }
+
+        // Environment Core
+        function step(state, action) {
+            let row = Math.floor(state / COLS);
+            let col = state % COLS;
+
+            if (action === 0) row = Math.max(row - 1, 0); // up
+            else if (action === 1) col = Math.min(col + 1, COLS - 1); // right
+            else if (action === 2) row = Math.min(row + 1, ROWS - 1); // down
+            else if (action === 3) col = Math.max(col - 1, 0); // left
+
+            let nextState = row * COLS + col;
+
+            if (CLIFF_STATES.has(nextState)) {
+                return { nextState: START_STATE, reward: -100, done: false };
+            }
+            if (nextState === GOAL_STATE) {
+                return { nextState, reward: -1, done: true };
+            }
+            return { nextState, reward: -1, done: false };
+        }
+
+        function argmax(arr) {
+            if (arr.length === 0) return -1;
+            let max = arr[0];
+            let maxIndex = 0;
+            // random tie-breaking
+            let maxIndices = [0]; 
+            for (let i = 1; i < arr.length; i++) {
+                if (arr[i] > max) {
+                    maxIndex = i;
+                    max = arr[i];
+                    maxIndices = [i];
+                } else if (arr[i] === max) {
+                    maxIndices.push(i);
+                }
+            }
+            return maxIndices[Math.floor(Math.random() * maxIndices.length)];
+        }
+
+        function epsilonGreedy(state, epsilon) {
+            if (Math.random() < epsilon) {
+                return Math.floor(Math.random() * NUM_ACTIONS);
+            }
+            return argmax(Q[state]);
+        }
+
+        // Training Loop
+        function train(numEpisodes, alg, alpha, gamma, epsilon) {
+            btnTrain.disabled = true;
+            btnTrain.innerHTML = 'Training...';
+            
+            // To not freeze UI, batch the training
+            const BATCH_SIZE = 50;
+            let ep = 0;
+
+            function trainBatch() {
+                let batchBoundary = Math.min(ep + BATCH_SIZE, numEpisodes);
+                for (; ep < batchBoundary; ep++) {
+                    let state = START_STATE;
+                    let action = epsilonGreedy(state, epsilon);
+                    let totalReward = 0;
+                    let steps = 0;
+
+                    while (steps < 200) { // Safety break
+                        let { nextState, reward, done } = step(state, action);
+                        let nextAction = epsilonGreedy(nextState, epsilon); // for SARSA
+
+                        let tdTarget;
+                        if (alg === 'qlearning') {
+                            let bestNextValue = Math.max(...Q[nextState]);
+                            tdTarget = reward + gamma * bestNextValue * (done ? 0 : 1);
+                        } else { // SARSA
+                            tdTarget = reward + gamma * Q[nextState][nextAction] * (done ? 0 : 1);
+                        }
+
+                        let tdError = tdTarget - Q[state][action];
+                        Q[state][action] += alpha * tdError;
+
+                        state = nextState;
+                        action = nextAction; // sarsa takes next action
+                        totalReward += reward;
+                        steps++;
+
+                        if (done) break;
+                    }
+                    
+                    recentRewards.push(totalReward);
+                    if (recentRewards.length > 100) recentRewards.shift();
+                }
+
+                totalEpisodes += BATCH_SIZE;
+                updateStats();
+                
+                if (ep < numEpisodes) {
+                    requestAnimationFrame(trainBatch);
+                } else {
+                    btnTrain.disabled = false;
+                    btnTrain.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Train Model';
+                    updateUI();
+                }
+            }
+            
+            trainBatch();
+        }
+
+        // UI Updates
+        function updateStats() {
+            document.getElementById('stat-episodes').innerText = totalEpisodes;
+            if (recentRewards.length > 0) {
+                let avg = recentRewards.reduce((a, b) => a + b, 0) / recentRewards.length;
+                document.getElementById('stat-reward').innerText = avg.toFixed(1);
+            }
+        }
+
+        function updateUI() {
+            // Find global max/min for color scaling
+            let maxQ = -Infinity;
+            let minQ = Infinity;
+            for(let s = 0; s < NUM_STATES; s++) {
+                if(s === GOAL_STATE || CLIFF_STATES.has(s)) continue;
+                let v = Math.max(...Q[s]);
+                if(v > maxQ) maxQ = v;
+                if(v < minQ) minQ = v;
+            }
+
+            for (let s = 0; s < NUM_STATES; s++) {
+                if (s === GOAL_STATE || CLIFF_STATES.has(s)) continue;
+                
+                let cellData = cells[s];
+                let maxAction = argmax(Q[s]);
+                let maxVal = Q[s][maxAction];
+
+                // Update arrows
+                for(let a=0; a<4; a++) {
+                    cellData.arrows[a].className = 'arrow';
+                    if(a === 0) cellData.arrows[a].classList.add('arrow-up');
+                    if(a === 1) cellData.arrows[a].classList.add('arrow-right');
+                    if(a === 2) cellData.arrows[a].classList.add('arrow-down');
+                    if(a === 3) cellData.arrows[a].classList.add('arrow-left');
+                    
+                    if (a === maxAction && maxVal !== 0) {
+                        cellData.arrows[a].classList.add('best');
+                    } else if (maxVal === 0 && Q[s][a] === 0) {
+                        // tie for Unvisited
+                    } else {
+                        // hide terrible actions or dim them
+                        let diff = maxVal - Q[s][a];
+                        cellData.arrows[a].style.opacity = diff < 5 ? (1 - diff/5).toFixed(2) : 0.1;
+                    }
+                }
+
+                // Update background intensity (heatmap)
+                if (maxVal !== 0 && maxQ !== minQ) {
+                    let normalized = (maxVal - minQ) / (maxQ - minQ); // 0 to 1
+                    cellData.intensity.style.opacity = (normalized * 0.6).toFixed(2);
+                } else {
+                    cellData.intensity.style.opacity = 0;
+                }
+            }
+        }
+
+        // Policy runners
+        let isRunningPolicy = false;
+        async function runPolicy() {
+            if (isRunningPolicy) return;
+            isRunningPolicy = true;
+            
+            let state = START_STATE;
+            setAgentPosition(state);
+            agentEl.style.display = 'flex';
+
+            let steps = 0;
+            while (steps < 100) {
+                await new Promise(r => setTimeout(r, 200)); // 200ms delay for animation
+                
+                let action = argmax(Q[state]); // greedy policy
+                let { nextState, reward, done } = step(state, action);
+                
+                state = nextState;
+                setAgentPosition(state);
+
+                if (done) break;
+                if (state === START_STATE && reward === -100) {
+                     // fell off cliff
+                     agentEl.innerText = '💀';
+                     await new Promise(r => setTimeout(r, 500));
+                     agentEl.innerText = '🤖';
+                     break;
+                }
+                steps++;
+            }
+            
+            // Animation done
+            setTimeout(() => {
+                agentEl.style.display = 'none';
+                isRunningPolicy = false;
+            }, 1000);
+        }
+
+        function setAgentPosition(state) {
+            let row = Math.floor(state / COLS);
+            let col = state % COLS;
+            // Cell is 50x50, grid gap is 4px
+            // container relative pos
+            let x = col * (50 + 4) + (50 - 30)/2 + 4; // +4 for border
+            let y = row * (50 + 4) + (50 - 30)/2 + 4;
+            
+            agentEl.style.transform = `translate(${x}px, ${y}px)`;
+        }
+
+        // Interaction
+        function showTooltip(e, state) {
+            if (CLIFF_STATES.has(state)) {
+                tooltip.innerHTML = "CLIFF\nReward: -100";
+            } else if (state === GOAL_STATE) {
+                tooltip.innerHTML = "GOAL\nReward: -1";
+            } else {
+                let qv = Q[state];
+                tooltip.innerHTML = `State: ${state}\nQ(Up):    ${qv[0].toFixed(2)}\nQ(Right): ${qv[1].toFixed(2)}\nQ(Down):  ${qv[2].toFixed(2)}\nQ(Left):  ${qv[3].toFixed(2)}`;
+            }
+            tooltip.style.display = 'block';
+            moveTooltip(e);
+        }
+
+        function moveTooltip(e) {
+            tooltip.style.left = (e.pageX + 15) + 'px';
+            tooltip.style.top = (e.pageY + 15) + 'px';
+        }
+
+        // Listeners
+        const btnTrain = document.getElementById('btn-train');
+        btnTrain.addEventListener('click', () => {
+             const alg = document.getElementById('algorithm').value;
+             const alpha = parseFloat(document.getElementById('alpha').value);
+             const gamma = parseFloat(document.getElementById('gamma').value);
+             const epsilon = parseFloat(document.getElementById('epsilon').value);
+             const eps = parseInt(document.getElementById('episodes').value);
+             train(eps, alg, alpha, gamma, epsilon);
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            Q = Array.from({length: NUM_STATES}, () => Array(NUM_ACTIONS).fill(0.0));
+            totalEpisodes = 0;
+            recentRewards = [];
+            updateStats();
+            updateUI();
+        });
+
+        document.getElementById('btn-run-policy').addEventListener('click', () => {
+            runPolicy();
+        });
+
+        document.getElementById('algorithm').addEventListener('change', (e) => {
+            const exp = document.getElementById('explanation-text');
+            if (e.target.value === 'qlearning') {
+                exp.innerHTML = "<strong>Q-Learning (Off-Policy)</strong> evaluates the greedy policy (taking the absolute best action) while moving using an epsilon-greedy policy. Because it assumes it will take the best action moving forward, it learns the shortest path along the cliff edge. It ignores the fact that epsilon-greedy exploration might cause it to fall off periodically during training.";
+            } else {
+                exp.innerHTML = "<strong>SARSA (On-Policy)</strong> evaluates the policy it is currently following (epsilon-greedy). Since it knows there is a chance of randomly exploring and falling off the cliff, it learns to back away from the cliff edge and takes a safer, longer route avoiding the cliff entirely.";
+            }
+            document.getElementById('btn-reset').click(); // Auto-reset when changing alg
+        });
+
+        // Sync slider values
+        ['alpha', 'gamma', 'epsilon'].forEach(id => {
+            const el = document.getElementById(id);
+            const valEl = document.getElementById(id + '-val');
+            el.addEventListener('input', () => {
+                valEl.innerText = parseFloat(el.value).toFixed(2);
+            });
+        });
+
+        // Init
+        createGrid();
+        updateStats();
+
+    </script>
+</body>
+</html>
