@@ -1,14 +1,12 @@
 """
-Deep Q-Network (DQN) for Pong with PyTorch
+Deep Q-Network (DQN) for CartPole with PyTorch
 
-Train an agent to play Pong from raw pixels using CNNs.
-Based on DeepMind's 2015 Nature paper.
+Train an agent to balance a pole on a cart using a simple Multi-Layer Perceptron (MLP).
+This is a simpler, easier-to-run alternative to Atari Pong. It runs on a 1D state array
+instead of image pixels, making it much easier to understand how DQN works.
 
-Key components:
-1. CNN: Extract features from stacked game frames
-2. Experience Replay: Random sampling breaks correlations
-3. Target Network: Stable TD targets
-4. Frame Stacking: 4 frames capture motion/velocity
+Prerequisites:
+    pip install torch numpy gymnasium
 """
 
 import torch
@@ -18,62 +16,37 @@ import numpy as np
 from collections import deque
 import random
 
+try:
+    import gymnasium as gym
+except ImportError:
+    print("Please install gymnasium: pip install gymnasium")
+    raise
 
-class PongCNN(nn.Module):
+class DQN(nn.Module):
     """
-    Convolutional neural network for Pong Q-values.
+    Standard fully connected neural network (MLP) for CartPole.
     
-    Architecture (DeepMind 2015):
-    Input: 84x84x4 (4 stacked grayscale frames)
-    → Conv 32 filters (8x8, stride 4) → ReLU
-    → Conv 64 filters (4x4, stride 2) → ReLU  
-    → Conv 64 filters (3x3, stride 1) → ReLU
-    → FC 512 → ReLU
-    → Output: 3 Q-values (UP, DOWN, STAY)
-    
-    Why this architecture?
-    - First conv: Large receptive field, detects edges/basic shapes
-    - Second conv: Combines features, finds paddles/ball
-    - Third conv: High-level patterns, game state understanding
-    - FC layers: Combine spatial info into Q-values
+    Input: state space dimension (4 for CartPole: position, velocity, angle, angular velocity)
+    Output: action space dimension (2 for CartPole: Left, Right)
     """
-    
-    def __init__(self, num_actions=3):
-        super(PongCNN, self).__init__()
-        
-        self.conv = nn.Sequential(
-            nn.Conv2d(4, 32, kernel_size=8, stride=4),  # 84x84x4 → 20x20x32
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2), # 20x20x32 → 9x9x64
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1), # 9x9x64 → 7x7x64
-            nn.ReLU()
-        )
-        
+    def __init__(self, input_dim, output_dim):
+        super(DQN, self).__init__()
         self.fc = nn.Sequential(
-            nn.Linear(7 * 7 * 64, 512),
+            nn.Linear(input_dim, 128),
             nn.ReLU(),
-            nn.Linear(512, num_actions)
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, output_dim)
         )
     
     def forward(self, x):
-        """
-        Forward pass: frames → Q-values
-        
-        Args:
-            x: (batch, 4, 84, 84) tensor of stacked frames
-        Returns:
-            (batch, num_actions) Q-values
-        """
-        x = self.conv(x)
-        x = x.view(x.size(0), -1)  # Flatten
+        """Forward pass: state → Q-values"""
         return self.fc(x)
 
-
 class ReplayBuffer:
-    """Store and sample experience tuples."""
+    """Store and sample experience tuples to break temporal correlations."""
     
-    def __init__(self, capacity=100000):
+    def __init__(self, capacity=10000):
         self.buffer = deque(maxlen=capacity)
     
     def add(self, state, action, reward, next_state, done):
@@ -94,25 +67,24 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
-
 class DQNAgent:
-    """DQN agent for playing Pong."""
+    """DQN agent for CartPole."""
     
-    def __init__(self, num_actions=3, lr=0.00025, gamma=0.99, device='cpu'):
+    def __init__(self, state_dim, num_actions, lr=1e-3, gamma=0.99, device='cpu'):
         self.device = device
         self.gamma = gamma
         self.num_actions = num_actions
         
         # Q-network (the one we train)
-        self.q_net = PongCNN(num_actions).to(device)
+        self.q_net = DQN(state_dim, num_actions).to(device)
         
-        # Target network (frozen copy for stable targets)
-        self.target_net = PongCNN(num_actions).to(device)
+        # Target network (frozen copy for stable TD targets)
+        self.target_net = DQN(state_dim, num_actions).to(device)
         self.target_net.load_state_dict(self.q_net.state_dict())
-        self.target_net.eval()  # Always in eval mode
+        self.target_net.eval()
         
         self.optimizer = optim.Adam(self.q_net.parameters(), lr=lr)
-        self.loss_fn = nn.SmoothL1Loss()  # Huber loss
+        self.loss_fn = nn.MSELoss()
     
     def get_action(self, state, epsilon):
         """Epsilon-greedy action selection."""
@@ -125,17 +97,7 @@ class DQNAgent:
             return q_values.argmax().item()
     
     def train_step(self, batch):
-        """
-        One gradient descent step.
-        
-        Loss = (Q(s,a) - TD_target)²
-        Where TD_target = r + γ * max_a' Q_target(s', a')
-        
-        Why target network?
-        - TD_target uses target_net (updated every N steps)
-        - This prevents "chasing a moving target"
-        - Greatly stabilizes training
-        """
+        """One gradient descent step."""
         states, actions, rewards, next_states, dones = batch
         
         # Move to device
@@ -145,7 +107,7 @@ class DQNAgent:
         next_states = next_states.to(self.device)
         dones = dones.to(self.device)
         
-        # Current Q-values: Q(s, a)
+        # Current Q-values: Q(s, a). We use gather to pick the Q-value of the action taken.
         current_q = self.q_net(states).gather(1, actions.unsqueeze(1)).squeeze()
         
         # Target Q-values: r + γ * max_a' Q_target(s', a')
@@ -166,85 +128,69 @@ class DQNAgent:
         """Copy Q-network weights to target network."""
         self.target_net.load_state_dict(self.q_net.state_dict())
 
-
-def preprocess_frame(frame):
-    """
-    Preprocess Atari frame: 210x160x3 → 84x84 grayscale.
-    
-    Steps: RGB→gray, crop score, resize, normalize
-    """
-    gray = np.mean(frame, axis=2).astype(np.uint8)
-    cropped = gray[34:194, :]  # Remove score
-    # In practice use: cv2.resize(cropped, (84, 84))
-    resized = cropped[::2, ::2]  # Simple downsample for demo
-    return resized / 255.0
-
-
-def train_pong():
-    """
-    Training loop for Pong DQN.
-    
-    Hyperparameters (from DeepMind paper):
-    - Replay buffer: 100k transitions
-    - Batch size: 32
-    - Learning rate: 0.00025
-    - Gamma: 0.99
-    - Epsilon: 1.0 → 0.1 over 1M frames
-    - Target network update: every 10k steps
-    """
+def train_cartpole():
+    """Training loop for CartPole DQN."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    agent = DQNAgent(num_actions=3, device=device)
-    replay_buffer = ReplayBuffer(capacity=100000)
-    
-    # Training params
-    epsilon_start = 1.0
-    epsilon_end = 0.1
-    epsilon_decay = 1000000  # Decay over 1M frames
-    batch_size = 32
-    target_update_freq = 10000
-    
-    print(f"Training Pong DQN on {device}")
+    print(f"Training CartPole DQN on {device}")
     print("-" * 60)
     
-    frame_count = 0
-    episode = 0
+    # Create CartPole environment
+    env = gym.make("CartPole-v1")
+    state_dim = env.observation_space.shape[0]  # 4
+    num_actions = env.action_space.n            # 2
     
-    # Simulate training (replace with actual gym environment)
-    for step in range(1000):
-        # Epsilon decay
-        epsilon = epsilon_end + (epsilon_start - epsilon_end) * \
-                  np.exp(-frame_count / epsilon_decay)
+    agent = DQNAgent(state_dim, num_actions, device=device)
+    replay_buffer = ReplayBuffer(capacity=10000)
+    
+    episodes = 500
+    batch_size = 64
+    target_update_freq = 10
+    
+    epsilon = 1.0
+    epsilon_min = 0.01
+    epsilon_decay = 0.995
+    
+    for episode in range(episodes):
+        state, _ = env.reset()
+        episode_reward = 0
+        done = False
+        truncated = False
         
-        # Simulate state (4 stacked frames: 4x84x84)
-        state = np.random.rand(4, 84, 84)
-        action = agent.get_action(state, epsilon)
-        
-        # Simulate environment step
-        reward = np.random.choice([-1, 0, 1])  # Pong rewards
-        next_state = np.random.rand(4, 84, 84)
-        done = random.random() < 0.01
-        
-        replay_buffer.add(state, action, reward, next_state, done)
-        frame_count += 1
-        
-        # Train when enough samples
-        if len(replay_buffer) >= batch_size:
-            batch = replay_buffer.sample(batch_size)
-            loss = agent.train_step(batch)
+        while not (done or truncated):
+            action = agent.get_action(state, epsilon)
             
-            if step % 100 == 0:
-                print(f"Step {step} | Epsilon {epsilon:.3f} | Loss {loss:.4f}")
+            # Step environment
+            next_state, reward, done, truncated, _ = env.step(action)
+            episode_reward += reward
+            
+            # Add to memory
+            is_terminal = done or truncated
+            replay_buffer.add(state, action, reward, next_state, is_terminal)
+            
+            state = next_state
+            
+            # Train model
+            if len(replay_buffer) >= batch_size:
+                batch = replay_buffer.sample(batch_size)
+                agent.train_step(batch)
         
-        # Update target network
-        if frame_count % target_update_freq == 0:
+        # Epsilon decay
+        epsilon = max(epsilon_min, epsilon * epsilon_decay)
+        
+        # Target network update
+        if episode % target_update_freq == 0:
             agent.update_target_network()
-            print(f"→ Target network updated at frame {frame_count}")
-        
-        if done:
-            episode += 1
-    
-    print(f"\nTraining complete: {episode} episodes, {frame_count} frames")
-
+            
+        if episode % 10 == 0:
+            print(f"Episode: {episode:3d} | Reward: {episode_reward:5.1f} | Epsilon: {epsilon:.3f}")
+            
+        if episode_reward >= 450:
+            print(f"\nSolved! Top performance reached at episode {episode} with reward {episode_reward}")
+            break
+            
+    env.close()
+    print("\nTraining complete! To see it play, you can run an evaluation loop with:")
+    print("env = gym.make('CartPole-v1', render_mode='human')")
 
 if __name__ == "__main__":
-    train_pong()
+    train_cartpole()
