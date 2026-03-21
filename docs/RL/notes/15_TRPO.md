@@ -92,16 +92,22 @@ Where $\rho_\pi(s)$ is the **state visitation frequency** under policy $\pi$.
 
 ## Constructing a Surrogate Objective
 
-### The Lower Bound Theorem
+### The Surrogate Objective "Lie"
+
+When building the surrogate objective $L_\pi(\pi')$, you makes a subtle "lie": you assume the new policy $\pi'$ visits the same states as the old policy $\pi$. You use old state distributions to approximate new policy performance.
+
+That lie is fine when $\pi'$ and $\pi$ are similar. But the further $\pi'$ drifts from $\pi$, the more wrong your approximation becomes. The surrogate could tell you "great policy!" when the true objective thinks it's terrible.
+
+### The KL Penalty Correction
 
 The true performance has a guaranteed lower bound:
 
-$$\eta(\pi') \geq L_\pi(\pi') - C \cdot D_{KL}^{max}(\pi || \pi')$$
+$$\eta(\pi') \geq L_\pi(\pi') - C \cdot KL(\pi || \pi')$$
 
-Where:
-- $L_\pi(\pi')$ is the surrogate objective using the old state distribution
-- $C$ is a constant coefficient
-- $D_{KL}^{max}$ is the maximum KL divergence between policies
+The KL term is a **correction for your own lie**. It subtracts a penalty proportional to how different the two policies are. This makes the whole expression a provably valid lower bound on the true objective — it can never lie above the truth, no matter how far you go.
+
+- **Bigger KL** → Bigger penalty → Weaker guarantee
+- **Small KL** → Small penalty → Tight, trustworthy bound
 
 ### Why This Matters
 
@@ -149,6 +155,8 @@ $$\max_{\pi'} L_\pi(\pi') \quad \text{subject to} \quad D_{KL}^{max}(\pi || \pi'
 
 Where $\delta$ is the **trust region** size.
 
+In practice, instead of dragging the penalty inside the objective, you just make KL a hard constraint — that's where $\delta$ (the trust region radius) comes from. Same idea, cleaner to work with.
+
 ### Why "Trust Region"?
 
 The constraint creates a bounded region around the current policy where updates are "trusted" to improve performance:
@@ -173,10 +181,14 @@ The constraint creates a bounded region around the current policy where updates 
 
 | Aspect | Vanilla Policy Gradient | TRPO |
 |--------|------------------------|------|
+| Update Style | **Learn** the update (Step size $\alpha$) | **Solve** for the update |
 | Update Size | Unconstrained | Bounded by trust region |
 | Stability | Can diverge | Guaranteed improvement |
 | Step Size | Fixed learning rate | Adaptive (within δ) |
 | Variance | High | Lower |
+
+> [!NOTE]
+> In TRPO, we don't actually "learn" how to update the policy in the traditional sense of a gradient step size; we solve a constrained optimization problem to find the optimal move within the trust region.
 
 ### Why Constrained Updates Matter for LLMs
 
