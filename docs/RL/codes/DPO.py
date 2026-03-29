@@ -35,8 +35,25 @@ def sft_text(example):
     We feed the full 'messages' list directly into apply_chat_template —
     no manual field extraction needed and works for multi-turn conversations.
     """
-    return {"text": tok.apply_chat_template(
-        example["messages"],
+    msgs = example["messages"]
+    user_msg = None
+    assistant_msg = None
+    for msg in msgs:
+      if msg["role"] == "user":
+        user_msg = msg["content"]
+        break
+
+    for msg in msgs:
+      if msg["role"] == "assistant":
+        assistant_msg = msg["content"]
+        break
+
+    return {
+        "text": tok.apply_chat_template(
+            [
+              {"content": user_msg, "role": "user"},
+              {"content": assistant_msg, "role": "assistant"}
+            ],
         tokenize=False,
         add_generation_prompt=False,
     )}
