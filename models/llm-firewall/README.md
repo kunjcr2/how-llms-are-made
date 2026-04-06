@@ -1,5 +1,7 @@
 # 🔥 LLM Firewall for Agentic Tool-Calling
 
+> **Note:** Run `Evaluation.ipynb` for testing purposes.
+
 > A fine-tuned classifier that intercepts prompt injection attacks before they hijack your AI agent's tools.
 
 ---
