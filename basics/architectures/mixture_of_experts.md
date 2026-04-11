@@ -40,7 +40,7 @@ Routing is dynamic, which can lead to load imbalances across devices and experts
 - **Dropless MoE:** Avoids this tradeoff by representing expert computation as block-diagonal matrix multiplications. With variable block sizes (depending on the number of tokens routed to each expert), block sparse matrix multiplication kernels process all tokens without dropping or padding.
 
 ## Load Balancing
-> **💡 Intuition: The "Rich Get Richer" Problem**
+> **Intuition: The "Rich Get Richer" Problem**
 > Imagine you manage 8 employees (experts). On day one, they are all equally inexperienced. You assign the first few tasks at random to Employee 1 and 2. Because they practice, they get slightly better. The next round, you naturally assign more tasks to Employee 1 and 2 because they are now your best workers. Fast forward a year, and Employees 1 and 2 are overworked, while Employees 3-8 have done nothing and are completely useless (so-called "dead experts"). Load balancing forces you to distribute work evenly so everyone learns.
 
 Since experts are initialized randomly, unbalanced routing early in training creates a feedback loop: frequently used experts learn quickly and are preferred more, while unused experts become "dead".
@@ -49,15 +49,15 @@ Since experts are initialized randomly, unbalanced routing early in training cre
 To ensure tokens are distributed evenly:
 1. **Noisy Top-K Gating:** Adding tunable Gaussian noise to logits encourages diverse routing.
 2. **Load Balancing Loss:** Soft constraints are added to the loss function.
-   - **Importance:** Sum of router probabilities for an expert over a batch. A balanced system has a low coefficient of variation (CV) for importance.
+   - **Importance:** (Router Probs) Sum of router probabilities for an expert over a batch. A balanced system has a low coefficient of variation (CV) for importance.
      - *Coefficient of Variation (CV):* Quantifies variability by calculating the ratio of the standard deviation ($\sigma$) to the mean ($\mu$), expressed as $CV = \frac{\sigma}{\mu}$. A lower CV indicates expert importance is distributed more evenly. When importance is perfectly uniform, the CV becomes zero.
-   - **Load:** The actual number of tokens assigned to an expert. (Note: CV for importance can be zero even if actual token loads are unbalanced, so load must be measured as well). Since this raw count is non-differentiable, a smooth estimator (probability of selection) is used.
+   - **Load:** (ACTUAL Token count probs) The actual number of tokens assigned to an expert. (Note: CV for importance can be zero even if actual token loads are unbalanced, so load must be measured as well). Since this raw count is non-differentiable, a smooth estimator (probability of selection) is used.
    - The simplified auxiliary load balancing loss forces both the average router probability per expert ($\pi_i$) and the fraction of tokens per expert ($f_i$) to approach $1/N$. It is computed as:
      $$ L_{balance} = \alpha \cdot N \sum_{i=1}^N f_i \cdot \pi_i $$
      where $\alpha$ is a tunable hyperparameter and $N$ is the number of experts. Multiplying by $N$ ensures the minimum possible value of the loss is 1, so the regularization strength doesn't shrink when scaling up the number of experts.
 
 ### Auxiliary-Loss-Free Load Balancing (DeepSeek V3 approach)
-> **💡 Intuition: The "Line Wait" or "Handicap" Approach**
+> **Intuition: The "Line Wait" or "Handicap" Approach**
 > Using a traditional Load Balancing Loss is like a boss yelling at you for assigning too much work to Employee 1—you appease the boss, but your company's actual performance drops because you're fighting two competing goals (doing a good job vs. distributing work). Auxiliary-Loss-Free routing solves this organically: If the line for Expert 1 is too long, we artificially add a "wait time" (reduce its routing score). Now, Expert 3's shorter line looks more appealing, and work naturally distributes *without* needing a conflicting penalty in our main loss function.
 
 Auxiliary losses force a tradeoff between model performance and load balance. DeepSeek V3 avoids this:
@@ -70,7 +70,7 @@ Auxiliary losses force a tradeoff between model performance and load balance. De
 The router uses a softmax function, which is mathematically **shift-invariant**. Adding a constant $c$ to all logits doesn't change the final output probabilities, because the constant factors out and cancels:
 $$ \frac{\exp(h_i + c)}{\sum \exp(h_j + c)} = \frac{\exp(c)\exp(h_i)}{\exp(c)\sum \exp(h_j)} = p_i $$
 
-> **💡 Intuition: The "Volume Knob" Problem**
+> **Intuition: The "Volume Knob" Problem**
 > Softmax only cares about *relative* differences between scores. Imagine adjusting the bass and treble on a stereo—the ratio between them is what matters. If you want the bass to be louder than the treble, you can achieve that by turning the bass slightly up, *or* by turning everything up to absolute maximum volume. While the mathematical *ratio* is identical, blasting the speakers at max volume eventually blows out your physical hardware. In neural networks, "blowing out the hardware" means your underlying logit numbers grow infinitely until they hit a `NaN` software crash from exceeding memory limits (Float16 overflow).
 
 However, this mathematical property creates a massive training pitfall:
@@ -86,3 +86,46 @@ Modern State-of-the-Art MoE training involves three main components:
 1. Standard cross-entropy loss for next-token prediction
 2. Load Balancing Loss (or auxiliary-loss-free bias adjustment) to prevent dead experts
 3. Router Z-Loss to keep training numerically stable
+
+## PyTorch Implementation (with Z-Loss & Load Balancing)
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class ProperMoERouter(nn.Module):
+    def __init__(self, d_model, num_experts, top_k=2, alpha=1e-2, z_loss_coeff=1e-4):
+        super().__init__()
+        self.router = nn.Linear(d_model, num_experts, bias=False)
+        self.num_experts = num_experts
+        self.top_k = top_k
+        self.alpha = alpha
+        self.z_loss_coeff = z_loss_coeff
+
+    def forward(self, x):
+        logits = self.router(x)
+        
+        # 1. Router Z-Loss: c * mean(logsumexp(logits)^2)
+        log_z = torch.logsumexp(logits, dim=-1)
+        z_loss = self.z_loss_coeff * torch.mean(log_z ** 2)
+        
+        # 2. Routing Probabilities 
+        probs = F.softmax(logits, dim=-1)
+        top_k_probs, top_k_indices = torch.topk(probs, self.top_k, dim=-1)
+        
+        # 3. Load Balancing Loss
+        # pi_i (Importance): average router prob per expert
+        pi_i = probs.mean(dim=(0, 1)) 
+        
+        # f_i (Load): fraction of tokens assigned to each expert
+        mask = F.one_hot(top_k_indices, num_classes=self.num_experts).float()
+        f_i = mask.sum(dim=-2).mean(dim=(0, 1))
+        
+        # L_balance = alpha * N * sum(f_i * pi_i)
+        balance_loss = self.alpha * self.num_experts * torch.sum(f_i * pi_i)
+        
+        # Normalize top-k probs for output
+        top_k_probs = top_k_probs / top_k_probs.sum(dim=-1, keepdim=True)
+        
+        return top_k_probs, top_k_indices, z_loss, balance_loss
+```
