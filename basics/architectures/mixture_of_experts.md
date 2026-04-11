@@ -17,14 +17,17 @@ MoE partitions a large FFN into several smaller, specialized **expert networks**
 
 ### Router Design
 A router predicts which experts to activate for a given token.
-1. The router computes a score for each expert using learned weight vectors $g_i$.
-2. It takes the dot product between the token embedding $x$ and $g_i$ to produce logits $h(x)$.
-3. A softmax function normalizes these logits into probabilities $p(x)$.
-4. The router selects the top-$k$ experts (e.g., top 2) with the highest probabilities.
-5. The final output is a weighted sum of the chosen experts' outputs, using the routing probabilities as weights.
+1. The router computes a score (logit) for each expert $i$ using learned weight vectors $g_i$. The logit is the dot product:
+   $$ h_i(x) = g_i \cdot x $$
+2. A softmax function normalizes these logits into probabilities $p_i(x)$:
+   $$ p_i(x) = \frac{\exp(h_i(x))}{\sum_{j=1}^N \exp(h_j(x))} $$
+3. The router selects the top-$k$ experts (e.g., top 2) with the highest probabilities.
+4. The final output is a weighted sum of the chosen experts' outputs, using the routing probabilities as weights:
+   $$ y = \sum_{i \in \text{Top-}k} p_i(x) \cdot \text{Expert}_i(x) $$
 
-### Expert Variations
-- **Fine-grained Experts:** Instead of a few large experts, recent models (e.g., DeepSeek V3, Qwen 3) use many smaller experts (e.g., 256), activating a subset (e.g., 8). This allows finer granularity and better performance.
+### Standard Architecture & Expert Variations
+- **Standard MoE (Top-2 Sparse MoE):** The most widely adopted and "proper" implementation found almost everywhere (such as Mixtral 8x7B) uses a moderate number of experts (e.g., 8) and routes each token to the Top-2 experts. This strikes a highly reliable balance between expressiveness, performance, and computational overhead.
+- **Fine-grained Experts:** Instead of a few large experts, recent advanced models (e.g., DeepSeek V3, Qwen 3) use many smaller experts (e.g., 256), activating a larger subset (e.g., 8). This allows finer granularity.
 - **Shared Experts:** A dedicated expert that is always active for every token. It learns broad, common knowledge, allowing routed specialists to focus on nuanced patterns. (Effectiveness is debated; some models show improvements, others do not).
 
 ## Token-to-Expert Assignment & Imbalance
@@ -37,6 +40,9 @@ Routing is dynamic, which can lead to load imbalances across devices and experts
 - **Dropless MoE:** Avoids this tradeoff by representing expert computation as block-diagonal matrix multiplications. With variable block sizes (depending on the number of tokens routed to each expert), block sparse matrix multiplication kernels process all tokens without dropping or padding.
 
 ## Load Balancing
+> **💡 Intuition: The "Rich Get Richer" Problem**
+> Imagine you manage 8 employees (experts). On day one, they are all equally inexperienced. You assign the first few tasks at random to Employee 1 and 2. Because they practice, they get slightly better. The next round, you naturally assign more tasks to Employee 1 and 2 because they are now your best workers. Fast forward a year, and Employees 1 and 2 are overworked, while Employees 3-8 have done nothing and are completely useless (so-called "dead experts"). Load balancing forces you to distribute work evenly so everyone learns.
+
 Since experts are initialized randomly, unbalanced routing early in training creates a feedback loop: frequently used experts learn quickly and are preferred more, while unused experts become "dead".
 
 ### Load Balancing with Auxiliary Loss
@@ -44,11 +50,16 @@ To ensure tokens are distributed evenly:
 1. **Noisy Top-K Gating:** Adding tunable Gaussian noise to logits encourages diverse routing.
 2. **Load Balancing Loss:** Soft constraints are added to the loss function.
    - **Importance:** Sum of router probabilities for an expert over a batch. A balanced system has a low coefficient of variation (CV) for importance.
-     - *Coefficient of Variation (CV):* Quantifies variability by calculating the ratio of the standard deviation to the mean. A lower CV indicates expert importance is distributed more evenly. When importance is perfectly uniform, the CV becomes zero.
+     - *Coefficient of Variation (CV):* Quantifies variability by calculating the ratio of the standard deviation ($\sigma$) to the mean ($\mu$), expressed as $CV = \frac{\sigma}{\mu}$. A lower CV indicates expert importance is distributed more evenly. When importance is perfectly uniform, the CV becomes zero.
    - **Load:** The actual number of tokens assigned to an expert. (Note: CV for importance can be zero even if actual token loads are unbalanced, so load must be measured as well). Since this raw count is non-differentiable, a smooth estimator (probability of selection) is used.
-   - The simplified auxiliary load balancing loss encourages both the average router probability per expert ($\pi_i$) and the fraction of tokens per expert ($f_i$) to approach $1/N$. It is weighted by a hyperparameter $\alpha$.
+   - The simplified auxiliary load balancing loss forces both the average router probability per expert ($\pi_i$) and the fraction of tokens per expert ($f_i$) to approach $1/N$. It is computed as:
+     $$ L_{balance} = \alpha \cdot N \sum_{i=1}^N f_i \cdot \pi_i $$
+     where $\alpha$ is a tunable hyperparameter and $N$ is the number of experts. Multiplying by $N$ ensures the minimum possible value of the loss is 1, so the regularization strength doesn't shrink when scaling up the number of experts.
 
 ### Auxiliary-Loss-Free Load Balancing (DeepSeek V3 approach)
+> **💡 Intuition: The "Line Wait" or "Handicap" Approach**
+> Using a traditional Load Balancing Loss is like a boss yelling at you for assigning too much work to Employee 1—you appease the boss, but your company's actual performance drops because you're fighting two competing goals (doing a good job vs. distributing work). Auxiliary-Loss-Free routing solves this organically: If the line for Expert 1 is too long, we artificially add a "wait time" (reduce its routing score). Now, Expert 3's shorter line looks more appealing, and work naturally distributes *without* needing a conflicting penalty in our main loss function.
+
 Auxiliary losses force a tradeoff between model performance and load balance. DeepSeek V3 avoids this:
 - Instead of softmax, it uses a sigmoid function on router logits.
 - A dynamic, small bias term is added to each expert's logits during top-$k$ routing calculation.
@@ -56,12 +67,19 @@ Auxiliary losses force a tradeoff between model performance and load balance. De
 - The top-$k$ selection uses these bias-adjusted scores, but the final output combination uses the original probabilities, maintaining both load balance and model performance.
 
 ## Stabilizing Training with Router Z-Loss
-The router uses a softmax function, which is **shift-invariant** (adding a constant to all logits doesn't change outputs). However:
-- This allows the underlying logits to grow indefinitely during training.
-- In low precision (Float16), this can quickly cause numerical overflow and training collapse.
-- **Safe Softmax** (subtracting the max logit) prevents immediate overflow but doesn't stop logits from growing.
-- **Router Z-Loss:** Adds a penalty for large log-normalization terms. It penalizes both positive and negative shifts by trying to keep the logits centered and small. 
-- Using Router Z-Loss prevents gradient explosions and ensures stable training natively, overcoming the loss spikes found in unregularized MoE training.
+The router uses a softmax function, which is mathematically **shift-invariant**. Adding a constant $c$ to all logits doesn't change the final output probabilities, because the constant factors out and cancels:
+$$ \frac{\exp(h_i + c)}{\sum \exp(h_j + c)} = \frac{\exp(c)\exp(h_i)}{\exp(c)\sum \exp(h_j)} = p_i $$
+
+> **💡 Intuition: The "Volume Knob" Problem**
+> Softmax only cares about *relative* differences between scores. Imagine adjusting the bass and treble on a stereo—the ratio between them is what matters. If you want the bass to be louder than the treble, you can achieve that by turning the bass slightly up, *or* by turning everything up to absolute maximum volume. While the mathematical *ratio* is identical, blasting the speakers at max volume eventually blows out your physical hardware. In neural networks, "blowing out the hardware" means your underlying logit numbers grow infinitely until they hit a `NaN` software crash from exceeding memory limits (Float16 overflow).
+
+However, this mathematical property creates a massive training pitfall:
+- Because the loss depends only on the relative differences in $p_i$, the underlying logits $h_i(x)$ can grow infinitely large without penalty.
+- In low-precision architectures (like Float16/Bfloat16), infinitely growing logits quickly overflow the memory limits and cause `NaN` errors, collapsing the training.
+- **Safe Softmax** (subtracting the max logit before exponentiating) prevents immediate overflow during calculation, but it doesn't stop the actual logit parameters from continuing to drift upwards forever.
+- **Router Z-Loss:** Solves the root cause by explicitly penalizing a large denominator (log-normalizer). It calculates the logarithm of the denominator and penalizes its square. This acts as a gravity well, forcing logits to stay numerically small and centered around zero:
+  $$ L_{Z} = c \cdot \log^2 \left( \sum_{i=1}^N \exp(h_i(x)) \right) $$
+- Implementing Router Z-Loss prevents gradient explosions and guarantees stable training natively, overcoming the sudden loss spikes common in unregularized MoE training.
 
 ## Conclusion
 Modern State-of-the-Art MoE training involves three main components:
