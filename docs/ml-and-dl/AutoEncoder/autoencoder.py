@@ -29,7 +29,7 @@ class VanillaAutoencoder(nn.Module):
         super().__init__()
         
         # Encoder: compresses input to latent space
-        self.encoder = nn.Sequential(
+        self._encoder = nn.Sequential(
             nn.Linear(input_dim, 256),
             nn.ReLU(),
             nn.Linear(256, 128),
@@ -38,7 +38,7 @@ class VanillaAutoencoder(nn.Module):
         )
         
         # Decoder: reconstructs input from latent space
-        self.decoder = nn.Sequential(
+        self._decoder = nn.Sequential(
             nn.Linear(latent_dim, 128),
             nn.ReLU(),
             nn.Linear(128, 256),
@@ -48,15 +48,15 @@ class VanillaAutoencoder(nn.Module):
         )
     
     def forward(self, x):
-        z = self.encoder(x)
-        x_recon = self.decoder(z)
+        z = self._encoder(x)
+        x_recon = self._decoder(z)
         return x_recon
     
     def encode(self, x):
-        return self.encoder(x)
+        return self._encoder(x)
     
     def decode(self, z):
-        return self.decoder(z)
+        return self._decoder(z)
 
 
 # =============================================================================
@@ -73,7 +73,7 @@ class ConvAutoencoder(nn.Module):
         super().__init__()
         
         # Encoder: 1x28x28 -> latent_dim
-        self.encoder = nn.Sequential(
+        self._encoder = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1),  # 32x14x14
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),  # 64x7x7
@@ -83,8 +83,8 @@ class ConvAutoencoder(nn.Module):
         )
         
         # Decoder: latent_dim -> 1x28x28
-        self.decoder_fc = nn.Linear(latent_dim, 64 * 7 * 7)
-        self.decoder_conv = nn.Sequential(
+        self._decoder_fc = nn.Linear(latent_dim, 64 * 7 * 7)
+        self._decoder_conv = nn.Sequential(
             nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),  # 32x14x14
             nn.ReLU(),
             nn.ConvTranspose2d(32, 1, kernel_size=3, stride=2, padding=1, output_padding=1),  # 1x28x28
@@ -92,17 +92,17 @@ class ConvAutoencoder(nn.Module):
         )
     
     def forward(self, x):
-        z = self.encoder(x)
-        x_recon = self.decode(z)
+        z = self._encoder(x)
+        x_recon = self._decoder(z)
         return x_recon
     
     def encode(self, x):
-        return self.encoder(x)
+        return self._encoder(x)
     
     def decode(self, z):
-        x = self.decoder_fc(z)
+        x = self._decoder_fc(z)
         x = x.view(-1, 64, 7, 7)
-        return self.decoder_conv(x)
+        return self._decoder_conv(x)
 
 
 # =============================================================================
@@ -300,10 +300,10 @@ def generate_samples(vae_model, num_samples: int = 16, latent_dim: int = 20):
 if __name__ == '__main__':
     print("Training Vanilla Autoencoder...")
     # Uncomment to train:
-    # model = train_vanilla_autoencoder()
+    model = train_vanilla_autoencoder()
     
-    print("\nTraining VAE...")
     # Uncomment to train:
+    # print("\nTraining VAE...")
     # vae = train_vae()
     # samples = generate_samples(vae)
     
