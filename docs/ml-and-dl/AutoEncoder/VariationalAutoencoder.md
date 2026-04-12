@@ -90,10 +90,13 @@ Same as AE; we want the output image to resemble the entry image.
 ### 2. KL Divergence (Regularization)
 This term forces the predicted distribution $N(\mu, \sigma)$ to be as close as possible to a **Standard Normal Distribution** $N(0, 1)$.
 
-**Standard KL Divergence Formula**:
+**Gaussian Distribution Formula used for derivation**:
+$$\mathcal{N}(x \mid \mu, \sigma^2) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(x - \mu)^2}{2\sigma^2}\right)$$
+
+**Standard KL Divergence Formula**: 
 $$D_{KL}(P \parallel Q) = \int P(x) \log \left( \frac{P(x)}{Q(x)} \right) dx$$
 
-**The Gaussian KL Formula:**
+**The Gaussian KL Formula:** (Ask GPT for derivation, its straightforward)
 $$\text{KL}(N(\mu, \sigma^2) \parallel N(0, 1)) = \frac{1}{2} \sum \left( \mu^2 + \sigma^2 - \log(\sigma^2) - 1 \right)$$
 
 ### Why KL Divergence?
