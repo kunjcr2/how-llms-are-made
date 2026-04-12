@@ -152,7 +152,7 @@ class VAE(nn.Module):
         Reparameterization trick: z = mu + sigma * epsilon
         This makes sampling differentiable.
         """
-        std = torch.exp(0.5 * logvar)
+        std = torch.exp(0.5 * logvar) # need to root the var for sd
         eps = torch.randn_like(std)
         return mu + eps * std
     
