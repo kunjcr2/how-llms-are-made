@@ -300,12 +300,12 @@ def generate_samples(vae_model, num_samples: int = 16, latent_dim: int = 20):
 if __name__ == '__main__':
     print("Training Vanilla Autoencoder...")
     # Uncomment to train:
-    model = train_vanilla_autoencoder()
+    # model = train_vanilla_autoencoder()
     
     # Uncomment to train:
     # print("\nTraining VAE...")
     # vae = train_vae()
     # samples = generate_samples(vae)
     
-    print("\nAutoencoder implementations ready!")
-    print("Uncomment the training calls in __main__ to run.")
+    # print("\nAutoencoder implementations ready!")
+    # print("Uncomment the training calls in __main__ to run.")
