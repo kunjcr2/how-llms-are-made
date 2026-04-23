@@ -22,3 +22,14 @@
 
 ### 6. What is Alignment Tax?
 - Dirty secret of the industry — RLHF makes models safer but also makes them dumber on benchmarks. There's a measurable performance drop on reasoning tasks after alignment. Companies manage this tradeoff constantly. Too much alignment = model refuses everything and becomes useless. Too little = model is capable but dangerous. Finding that line is literally a full time research problem.
+
+### 7. KV Cache problem at scale:
+- Bro you know KV Cache is CRAZY. Take a look at this
+```
+32k tokens × 32 batch × 80 layers × 2 (K and V) × 2 bytes = ~320GB
+```
+- You cant even run this on a single GPU.
+- So there exists this concept of PagedAttention, which helps to reduce KV Cache memory and try keeping it contagious leading to reduced latency during inference.
+- Multi query attention - dont use it bro. 1 key, value head overall for all the attention heads. Use grouped query rather.
+- Sliding window attention - when context is very long, we dont use all of it, we just use a small window of it, leading to a constant KV Cache memory even for a huge context.
+- Quantizing the KV Cache would lead to lower memory lol. That's a good idea, but DONT bro.
