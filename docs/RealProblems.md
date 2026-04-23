@@ -44,4 +44,8 @@
 - *Null space projection:* Identifying, for example, gender dimension and removing that entirely leading to no such biases. 
 - *Causal Mediation Analysis:* Seeing what attention or MLP is responsible for this and applying targeted fixes.
 - *Steering with a Second LM:* Using a trained second LM trained on non-biased dataset and then using it steer our base LM.
-- *Steering Applied to Toxicity:* A varient of above but we use the same model and let it generate something like "This text is toxic: ", and whatever it generates, using that to steer the model away from the same text.
+- *Steering Applied to Toxicity:* A varient of above but we use the same model and let it generate something like "This text is toxic: ", and whatever it generates, using that to steer the model away from the same text. (I think).
+
+### 10. What is residual dropout?
+- Dropout applied on residuals after the layer norm, of the sublayer before residual being added to the output.
+
