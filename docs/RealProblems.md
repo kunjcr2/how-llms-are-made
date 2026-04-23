@@ -33,3 +33,15 @@
 - Multi query attention - dont use it bro. 1 key, value head overall for all the attention heads. Use grouped query rather.
 - Sliding window attention - when context is very long, we dont use all of it, we just use a small window of it, leading to a constant KV Cache memory even for a huge context.
 - Quantizing the KV Cache would lead to lower memory lol. That's a good idea, but DONT bro.
+
+### 8. What are n-gram during generation?
+- It refers to a window of n tokens during inference. 
+- Usually used in a way of `no_repeat_ngram_size` to serve a penalty for not having repetation in n-gram sequences.
+
+### 9. Some of the ways to reduce the bias from the LLM.
+- *Word Embedding regularization:* Adding a penalty to embedding space if demographic words are not equidistant. If the word "Doctor" is closer to "he" then "she" then it shows some bias, so we penalize that.
+- *Data Augmentation:* Make proper balanced data by swapping the words to remove the bias. For example any sentence wih semantic towards "he" is duplicated with "she" also.
+- *Null space projection:* Identifying, for example, gender dimension and removing that entirely leading to no such biases. 
+- *Causal Mediation Analysis:* Seeing what attention or MLP is responsible for this and applying targeted fixes.
+- *Steering with a Second LM:* Using a trained second LM trained on non-biased dataset and then using it steer our base LM.
+- *Steering Applied to Toxicity:* A varient of above but we use the same model and let it generate something like "This text is toxic: ", and whatever it generates, using that to steer the model away from the same text.
