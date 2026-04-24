@@ -61,4 +61,4 @@ $$S[\pi_\theta] = -\sum_a \pi_\theta(a|s) \log \pi_\theta(a|s)$$
 ### 12. What is conjugate gradient?
 - A method to solve system of linear equations efficiently when A is large and you cant find an inverse, in `Ax=b`.
 - This thing matters for TRPO since there's something like Fisher/Hessain matrix and g as a gradient to be calculated. And we need to calculate `F⁻¹g`.  So we use conjugate gradient to solve this equation efficiently.
-- 
+
