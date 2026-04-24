@@ -20,7 +20,7 @@
 - Every major lab has a job to *Break* a model by doing adversial attacks on the mode by Prompt injections, jailbreaks, getting it to produce harmful content; etc. To see how bad the model is to such attacks by hackers or some people.
 - Part of A10 Firewall system I think.
 
-### 6. What is Alignment Tax?
+### 6. What is Alignment Tax or performance Regression?
 - Dirty secret of the industry — RLHF makes models safer but also makes them dumber on benchmarks. There's a measurable performance drop on reasoning tasks after alignment. Companies manage this tradeoff constantly. Too much alignment = model refuses everything and becomes useless. Too little = model is capable but dangerous. Finding that line is literally a full time research problem.
 
 ### 7. KV Cache problem at scale:
@@ -49,3 +49,11 @@
 ### 10. What is residual dropout?
 - Dropout applied on residuals after the layer norm, of the sublayer before residual being added to the output.
 
+### 11. What is the loss in PPO?
+$$L(\theta) = \mathbb{E}\left[L^{CLIP}(\theta) - c_1 \cdot L^{VF}(\theta) + c_2 \cdot S[\pi_\theta]\right]$$
+- Here, $L^{CLIP}$ means - "Get Better, but not too much". Its the famous clipping function defined as below. It basically means, if the updates are too large for the policy and drifts too much away, you put a hard leash and bring it back to a normal update as of the magnitude, NOT DIRECTION.
+$$L^{CLIP}(\theta) = \mathbb{E}\left[\min\left(r_t(\theta) \hat{A}_t, \; \text{clip}\left(r_t(\theta), 1-\epsilon, 1+\epsilon\right) \hat{A}_t\right)\right]$$
+- $L^{VF}$ is the value function loss, which means "How good is this state generally?", basically, the value model gives a score which is value state, which shows how good this position is in general, is it a bad representation of where the model's state is? If yes, we penalize, since we need the state of the model to be "Good", if its not, we are in a good state and we can minimize the loss through this.
+$$L^{VF}(\theta) = (V_\theta(s_t) - V_t^{target})^2$$
+- $S[\pi_\theta]$ is the entropy bonus, defined as "Don't collapse to one answer". The below formula is high(small negative) when the probability of all the tokens are almost same(uniform), and low(large negative) when the probability of one token is very high and rest are very low which means its going to ONE answer. So we want to maximize this.
+$$S[\pi_\theta] = -\sum_a \pi_\theta(a|s) \log \pi_\theta(a|s)$$

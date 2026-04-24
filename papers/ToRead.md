@@ -1,5 +1,5 @@
 **Week 1 — RLHF foundations**
-- InstructGPT (Ouyang et al., 2022)
+- [DONE] InstructGPT (Ouyang et al., 2022)
 - PPO (Schulman et al., 2017) — skim, focus on the clipped objective section
 - Reward Model ensembles / reward hacking: "Scaling Laws for Reward Model Overoptimization" (Gao et al., 2022)
 
