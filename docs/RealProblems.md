@@ -62,3 +62,33 @@ $$S[\pi_\theta] = -\sum_a \pi_\theta(a|s) \log \pi_\theta(a|s)$$
 - A method to solve system of linear equations efficiently when A is large and you cant find an inverse, in `Ax=b`.
 - This thing matters for TRPO since there's something like Fisher/Hessain matrix and g as a gradient to be calculated. And we need to calculate `F⁻¹g`.  So we use conjugate gradient to solve this equation efficiently.
 
+### 13. What is Goodhart's law in Reward modelling?
+- it states that the moment you start grading something on a number, people figure out how to pump that number without doing the actual thing you cared about.
+- So basically in terms of the AI, if we train an AI to maximize some sort of a Reward model, then AI will learn to JUST satisfy the reward model and not actually learn anything good and to the point. This is also called Reward Hacking.
+- Reward models are imperfect proxies. Optimize too hard against them and they break. The harder you push, the more your model gases the proxy instead of doing the real thing.
+
+### 14. What is *best-of-n sampling* or *Rejection Sampling* in terms of LLMs?
+- Simple, take a policy or an LLM, generate *n* completions for a given prompt, independently. Now, evaluate these *n* completions based on some metric, and pick the best one and drop *n-1*.
+
+### 15. What is Bradley-Terry model?
+- In stats, Bradley–Terry model is a probabilistic model for pairwise comparisons. If we wanna see if we choose A over B, then we basically take softmax over the strengths of those, in LLM's case, its reward model.
+- Let $r_i$ be the reward for output $i$. Then the probability of choosing $i$ over $j$ is
+$$P(i \succ j) = \frac{e^{r_i}}{e^{r_i} + e^{r_j}}$$
+- This is nothing but softmax and overall a system called as *Bradley Terry model*.
+
+### 16. What is mode collapse?
+- When model stops being diverse an outputs the same thing over and over again. Like it learns to output a single good answer to almost all the prompts, losing its creativity and diversity.
+
+### 17. What is credit assignment problem?
+- You generate a whole sequence by sampling token one-by-one.
+- You get single reward at the end.
+- we have no way to know which token decision was bad or good - the gradients cant flow backwards through the non-differentiable sampling process.
+
+### 18. What is Reparameterization?
+- Taking something expressed in terms of one variable and rewriting it in terms of another variable without changing what is really happening.
+```
+f(x) = x^2
+x = y^3
+
+f(x) = y^6 (f(x) reparameterized)
+```

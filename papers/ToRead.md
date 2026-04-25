@@ -1,19 +1,45 @@
-**Week 1 — RLHF foundations**
+**Week 1 — RLHF & alignment foundations**
 - [DONE] InstructGPT (Ouyang et al., 2022)
-- [DONE] PPO (Schulman et al., 2017) — skim, focus on the clipped objective section
-- Reward Model ensembles / reward hacking: "Scaling Laws for Reward Model Overoptimization" (Gao et al., 2022)
+- [DONE] PPO (Schulman et al., 2017)
+- [SKIP] Scaling Laws for Reward Model Overoptimization (Gao et al., 2022)
+- [CURRENT] DPO (Rafailov et al., 2023)
+- Constitutional AI (Bai et al., 2022)
+- SafeRLHF (Dai et al., ICLR 2024) — NEW, directly addresses safety-aligned fine-tuning, exactly what JD asks for
 
-**Week 2 — Modern alignment**
-- DPO (Rafailov et al., 2023)
-- Constitutional AI (Bai et al., 2022) — directly relevant to your safety team
-- GRPO / DeepSeek-R1 — the technical report, not a paper, but dense and worth it
+**Week 2 — Jailbreaking foundations**
+- Jailbroken: How Does LLM Safety Training Fail? (Wei et al., 2023)
+- Universal and Transferable Adversarial Attacks / GCG (Zou et al., 2023)
+- PAIR: Jailbreaking Black Box LLMs in Twenty Queries (Chao et al., 2023)
+- TAP: Tree of Attacks with Pruning (Mehrotra et al., 2024)
+- AutoDAN-Turbo (Liu et al., ICLR 2025) — current SOTA automated red-teaming
+- Crescendo (Russinovich et al., Microsoft, 2024) — multi-turn attacks
 
-**Week 3 — Safety & evals**
-- "Emergent Abilities of Large Language Models" (Wei et al., 2022) — understanding what you're even trying to make safe
-- "Red Teaming Language Models with Language Models" (Perez et al., 2022)
-- Anthropic's "Sleeper Agents" paper — this one will genuinely disturb you in a good way
+**Week 3 — Prompt injection** (A10's product surface)
+- Not What You've Signed Up For (Greshake et al., 2023)
+- Prompt Injection Attacks on LLMs: A Survey (2025)
+- AgentDojo (Debenedetti et al., NeurIPS 2024)
+- Adaptive Attacks Break Defenses Against Indirect PI (Zhan et al., NAACL 2025)
+- Indirect Prompt Injections: Are Firewalls All You Need? (Shi et al., 2025)
 
-**Week 4 — Serving & infra (A10's actual world)**
-- "Efficient Memory Management for Large Language Model Serving with PagedAttention" — the vLLM paper
-- "Continuous Batching" — Orca paper
-- Speculative decoding — any good writeup, Leviathan et al. is the canonical one
+**Week 3.5 — Bias & toxicity** (NEW, JD explicitly mentions "bias detection")
+- RealToxicityPrompts (Gehman et al., 2020) — canonical toxicity eval
+- BBQ: Bias Benchmark for QA (Parrish et al., 2022) — social bias eval, you'll likely use this
+- DecodingTrust (Wang et al., NeurIPS 2023) — comprehensive trustworthiness eval, A10 will probably reference this
+
+**Week 4 — Defenses, guardrails, evaluation frameworks** (THIS IS THE JOB)
+- Llama Guard 2 / Llama Guard 3 technical reports
+- HarmBench (Mazeika et al., 2024)
+- StrongREJECT (Souly et al., NeurIPS 2024)
+- WildGuard (Han et al., NeurIPS 2024) — NEW, modern open-source safety classifier, direct comparable to what A10 builds
+- OWASP Top 10 for LLM Applications 2025
+
+**Week 4 side quest — tooling (1-2 days each, hands-on)**
+- Garak (NVIDIA) — run against an open model, document findings
+- PyRIT (Microsoft) — skim docs
+- Inspect (UK AISI) — modern eval framework
+- Run AgentDojo locally — direct portfolio talking point
+
+**Optional / stretch (only if ahead of schedule)**
+- Sleeper Agents (Hubinger et al., Anthropic 2024) — alignment intuition
+- Visual Adversarial Examples Jailbreak Aligned LLMs (Qi et al., 2024) — multimodal angle, JD mentions multimodal
+- Latent Adversarial Training (Sheshadri et al., 2024) — frontier defense technique
