@@ -2,7 +2,7 @@
 - [DONE] InstructGPT (Ouyang et al., 2022)
 - [DONE] PPO (Schulman et al., 2017)
 - [SKIP] Scaling Laws for Reward Model Overoptimization (Gao et al., 2022)
-- [CURRENT] DPO (Rafailov et al., 2023)
+- [DONE] DPO (Rafailov et al., 2023)
 - Constitutional AI (Bai et al., 2022)
 - SafeRLHF (Dai et al., ICLR 2024) — NEW, directly addresses safety-aligned fine-tuning, exactly what JD asks for
 
