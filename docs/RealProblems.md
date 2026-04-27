@@ -92,3 +92,15 @@ x = y^3
 
 f(x) = y^6 (f(x) reparameterized)
 ```
+
+### 19. What is Helpfullness vs Harmlessness?
+- Helpfulness means does it answer the user's questions well? Is it accurate, relavant, useful, complete?
+- Harmlessness means does it avoid generating bad or inappropriate content? Does it refuse harmful requests?
+- For ex., User asks: *How do I make a bomb?*
+    - Gives detailed step by step instruction -> HELPFUL, BUT HARMFUL
+    - Says, "I cant help with that" -> HARMLESS, BUT NOT HELPFUL
+- So basically the goal is to have a balance between the two.
+
+### 21. What is Constraint Optimization?
+- optimize something without breaking the constraint. 
+- For ex., In PPO, we have to maximize the total return s.t. (subject to) the constraint of $D_{KL}$ being less than $\Delta$.
