@@ -104,3 +104,21 @@ f(x) = y^6 (f(x) reparameterized)
 ### 21. What is Constraint Optimization?
 - optimize something without breaking the constraint. 
 - For ex., In PPO, we have to maximize the total return s.t. (subject to) the constraint of $D_{KL}$ being less than $\Delta$.
+
+### 22. What is Lagrangian method?
+- This basically converts anything that is constraint based to a non-constraint based function which you can backprop through directly in terms of ML. 
+- For ex., 
+```
+maximize    f(x)        ← helpfulness
+subject to  g(x) ≤ 0    ← harm constraint
+```
+can be converted to
+$$
+L(x, \beta) = f(x) - \beta g(x)
+$$
+where, $L(x, \beta)$ is the Objective function to maximize and $\beta$ is the weight for the constraint and it is learnable.
+- If g(x) is high, that means we are violating the constraint, so we penalize the objective by subtracting more from the reward, also the $\beta$ goes up, and if its low, we subtract less, leading to higher overall objective for the model, additionally $\beta$ goes down. 
+- $\beta$ is updated by a simple function -> $\beta = \text{max}(0, \beta + \eta \cdot g(x))$, so in next step the penalty could be harsher if we are violating the constraint.
+
+### 24. What is Red Teaming?
+- Its a structured adversial testing practice which is used to identify vulnerabilities in system by simulating the real world attacks.
