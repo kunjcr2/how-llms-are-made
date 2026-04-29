@@ -4,7 +4,7 @@
 - [SKIP] Scaling Laws for Reward Model Overoptimization (Gao et al., 2022)
 - [DONE] DPO (Rafailov et al., 2023)
 - [DONE] Constitutional AI (Bai et al., 2022)
-- SafeRLHF (Dai et al., ICLR 2024) — NEW, directly addresses safety-aligned fine-tuning, exactly what JD asks for
+- [DONE] SafeRLHF (Dai et al., ICLR 2024) — NEW, directly addresses safety-aligned fine-tuning, exactly what JD asks for
 
 **Week 2 — Jailbreaking foundations**
 - Jailbroken: How Does LLM Safety Training Fail? (Wei et al., 2023)

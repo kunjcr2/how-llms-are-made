@@ -122,3 +122,55 @@ where, $L(x, \beta)$ is the Objective function to maximize and $\beta$ is the we
 
 ### 24. What is Red Teaming?
 - Its a structured adversial testing practice which is used to identify vulnerabilities in system by simulating the real world attacks.
+
+### 25. What is LoRA?
+- LoRA = Low Rank Adaptation. It is a fine-tuning technique where instead of updating all the weights of a large model, you freeze the original weights and add two small trainable matrices A and B in front of specific layers.
+- The weight update is approximated as:
+$$
+W_{new} = W_{frozen} + \Delta W = W_{frozen} + A \cdot B
+$$
+where $A \in \mathbb{R}^{d \times r}$ and $B \in \mathbb{R}^{r \times d}$ and $r \ll d$.
+- So in reality, LoRA is just a tiny neural network (two linear layers with no activation) added in parallel to the frozen weight matrix. The output of both gets summed.
+- $W_{frozen}$ never gets a gradient. Only $A$ and $B$ do.
+
+### 26. Why does LoRA work?
+- The core assumption is that weight updates $\Delta W$ during fine-tuning are **low rank** in practice.
+- This means the model does not need to update in all $d \times d$ directions — it only needs to move in a small number of meaningful directions, which A and B span.
+- So instead of updating 589,824 parameters in a `[768, 768]` matrix, you update `2 * 768 * r` parameters. At `r=8` that is 12,288 — a 48x reduction.
+- Basically, 768 -> r -> 768.
+
+### 27. LoRA Initialization
+- $B$ is initialized to **zero**, so $\Delta W = A \cdot B = 0$ at the start.
+- $A$ is initialized with random Gaussian.
+- This means at step 0, the model behaves exactly like the pretrained model. Training builds up $\Delta W$ from zero gradually.
+
+### 28. LoRA Hyperparameters
+- **`r` (rank)** — size of the bottleneck. Controls how many parameters A and B have.
+    - Low `r` (2, 4, 8) → fewer params, less expressive, faster, good for simple tasks or small data.
+    - High `r` (32, 64) → more params, more expressive, approaches full fine-tuning.
+    - Most common default: `r=8` or `r=16`.
+- **`alpha` (α)** — scaling factor. The actual update applied is $\frac{\alpha}{r} \cdot A \cdot B$.
+    - Controls how much the LoRA update influences the frozen weights.
+    - Common convention: set `alpha = r` (scale = 1.0) or `alpha = 2r` (scale = 2.0).
+    - In practice, tune `r` and learning rate first. `alpha` is secondary.
+- **`dropout`** — applied to A before multiplying B. Standard regularization. Typically 0.05 or 0.1.
+
+### 29. Where do LoRA weights get added?
+- You specify `target_modules` in the config — e.g. `["q_proj", "v_proj"]`.
+- Every transformer layer gets its **own independent** A and B matrices for each targeted module.
+- So for a 32-layer model targeting `q_proj` and `v_proj`:
+    - 32 layers × 2 modules × 2 matrices (A, B) = 128 small matrices total.
+    - Each layer's A and B are independent — not shared.
+- Total trainable params = `n_layers * n_target_modules * 2 * d * r`
+
+### 30. Which layers to target in LoRA?
+| Task | Target Modules |
+|---|---|
+| Style / tone / format change | `q_proj`, `v_proj` |
+| Domain adaptation (new knowledge) | add `gate_proj`, `up_proj`, `down_proj` |
+| Strong behavior change (safety, alignment) | all attention + MLP |
+| Limited data, limited GPU | `q_proj`, `v_proj` only, low `r` |
+
+- `q_proj` and `v_proj` are the default because Q and V control what the model attends to and what it extracts — the most semantically meaningful projections.
+- MLP layers (`gate_proj`, `up_proj`, `down_proj`) are where transformers store factual associations — hit these when injecting domain knowledge.
+- No theoretical formula exists for which layers to pick. It is empirical. `r` matters more than module selection in most cases.
