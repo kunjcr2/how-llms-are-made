@@ -1,297 +1,299 @@
-# Compressed Sparse Attention (CSA)
-
-## The Problem with Standard Attention
-
-In a standard transformer, every token attends to every other token in the sequence. The attention matrix is of size `T x T` where `T` is the sequence length. This means:
-
-- Compute scales as **O(T²)**
-- KV cache scales as **O(T)**
-
-For short sequences (512, 2048 tokens) this is manageable. For long sequences — 100K, 1M tokens — it becomes computationally infeasible. A 1M token sequence would require a 1M x 1M attention matrix. That is one trillion attention score computations per layer, per forward pass.
-
-This is the long-context problem. CSA is one approach to solving it.
+# Compressed Sparse Attention (CSA), Heavily Compressed Attention (HCA), and the DeepSeek V4 Hybrid Architecture
 
 ---
 
-## The Core Idea
+## Part 1: The Problem — Why Standard Attention Breaks
 
-CSA divides the context into two regions for each query token at position `t`:
+You have a sequence of tokens. Each token is a vector. During attention, every token looks at all previous tokens to understand context.
 
-1. **Local window** — the most recent `w` tokens before `t`. These tokens receive exact, full-precision attention. They are the most immediately relevant to the current token.
+At 1M tokens, token number 999,999 has to look at 999,998 previous tokens. Every single layer. Every single forward pass.
 
-2. **Old context** — everything before the local window. Instead of attending to each of these tokens individually, they are compressed into a smaller set of summary tokens using a learned compression function. The query attends to these summary tokens rather than the originals.
+That is:
+- Insane amount of compute
+- Insane amount of memory (you have to store K and V vectors for every past token — this is the KV cache)
 
-This gives you the best of both worlds: precise attention where it matters most (recent context), and approximate but cheap attention over the broader history.
-
----
-
-## Why This Works
-
-The intuition is that tokens far back in the sequence are less likely to be immediately relevant to the current token than tokens nearby. A sentence being written now is more likely to depend on the previous paragraph than on something said ten thousand tokens ago. The local window captures fine-grained recent dependencies. The compressed old context captures coarse-grained global context.
-
-The compression is learned, not hand-crafted. The compressor — typically a linear projection — learns during training which information across a group of tokens is worth preserving in the summary representation. It does not randomly drop tokens; it distills them.
+People tried fixing this by reducing the number of attention heads (MQA, GQA, MLA). Those work on the head dimension. DeepSeek V4 does something different — it compresses along the **sequence dimension** instead. Fewer past tokens to attend to, not fewer heads.
 
 ---
 
-## Formal Definition
+## Part 2: The Intuition Behind CSA — Your Own Memory
 
-Let `x` be a sequence of `T` tokens, each of dimension `D`. For a query token at position `t`:
+Think about how your memory works.
 
-**Local window tokens:**
+- Ask you what happened **yesterday** → you remember it clearly, in detail
+- Ask you what happened **6 months ago** → you remember a rough summary, not every moment
 
-```
-x_local = x[t - w : t + 1]     shape: [w, D]
-```
-
-**Old tokens (outside the window):**
+CSA does the same thing:
 
 ```
-x_old = x[0 : t - w]           shape: [t - w, D]
+Recent tokens  →  remember exactly       →  local window (exact attention)
+Old tokens     →  remember as a summary  →  compression (approximate attention)
 ```
 
-**Compression of old tokens:**
-
-Group `x_old` into chunks of size `r` (compress ratio), then project each chunk:
-
-```
-x_old reshaped: [floor((t-w)/r), r*D]
-x_compressed = Linear(r*D → D)(x_old reshaped)    shape: [floor((t-w)/r), D]
-```
-
-**Effective KV set for token t:**
-
-```
-K_eff = concat(K(x_compressed), K(x_local))
-V_eff = concat(V(x_compressed), V(x_local))
-```
-
-**Attention:**
-
-```
-Attention(Q(x_t), K_eff, V_eff)
-```
-
-The number of tokens attended to is:
-
-```
-w + floor((t - w) / r)
-```
-
-For a 1M token sequence with `w=512` and `r=8`, the effective context size per token is approximately `512 + 124,937 = 125,449` instead of `1,000,000`. That is an 8x reduction in the old context alone. Combined with not needing to store all KV pairs for old tokens, the memory savings are substantial.
+That is the entire idea of CSA. Everything else is just DeepSeek's specific way of implementing it.
 
 ---
 
-## Comparison to Standard Attention
+## Part 3: The Local Window — Easy Part
 
-| Property | Standard Attention | CSA |
+For any token at position `t`, the most recent `w` tokens get **full exact attention**. Nothing special here. Same as standard attention, just on a small window.
+
+```
+Sequence:  [tok_0, tok_1, ..., tok_990, tok_991, tok_992, tok_993, tok_994, tok_995, tok_996, tok_997, tok_998, tok_999]
+                                                                                                                  ^
+                                                                                                              current token (t=999)
+
+Local window (w=8):  [tok_992, tok_993, tok_994, tok_995, tok_996, tok_997, tok_998, tok_999]
+                      ← these 8 tokens get full exact attention, nothing compressed
+```
+
+Everything before `tok_992` is "old context" and needs to be compressed.
+
+---
+
+## Part 4: The Compression — Where It Gets Interesting
+
+You have 992 old tokens. You do not want to attend to all 992. So you compress them into a smaller number of **summary tokens**.
+
+The simplest version: group every 4 tokens together, squash them into 1.
+
+```
+992 old tokens, compress ratio r=4:
+
+[tok_0,  tok_1,  tok_2,  tok_3]   →  summary_0
+[tok_4,  tok_5,  tok_6,  tok_7]   →  summary_1
+[tok_8,  tok_9,  tok_10, tok_11]  →  summary_2
+...
+992 tokens → 248 summary tokens
+```
+
+Now instead of attending to 992 tokens, you attend to 248 summaries. 4x cheaper on the old context.
+
+The summary tokens are NOT the original tokens. They are compressed representations that try to capture the most important information from each group.
+
+---
+
+## Part 5: How DeepSeek Actually Does the Compression
+
+This is where the video explained something more specific than the simple "linear projection" idea. DeepSeek does it in 3 steps.
+
+### Step 1: First project each token down to a smaller vector
+
+Before any compression, each token's hidden state (dimension D = 7168 in DeepSeek V4) gets projected down to a smaller KV vector of dimension C = 512:
+
+```
+token hidden state: [7168 dims]
+        ↓   W_KV matrix
+KV entry:           [512 dims]
+```
+
+So every token becomes a 512-dim KV entry. This is the thing that actually gets compressed, not the full 7168-dim hidden state. Cheaper to work with.
+
+### Step 2: Score each token by importance — data-dependent weighting
+
+Simple averaging would work but it is bad. If one token in a group of 4 is really important and the other 3 are filler, averaging dilutes the important one.
+
+Instead, DeepSeek scores each token by how important it is, then does a **weighted sum** — important tokens contribute more to the summary.
+
+**Scalar version (simpler idea first):**
+
+```
+Group: [kv_0, kv_1, kv_2, kv_3]   each is a 512-dim vector
+
+score_i = dot(hidden_state_i, learned_vector)   ← one number per token
+[s_0, s_1, s_2, s_3] = softmax([score_0, score_1, score_2, score_3])
+                        ← scores sum to 1, like attention weights
+
+summary = s_0*kv_0 + s_1*kv_1 + s_2*kv_2 + s_3*kv_3
+```
+
+If `tok_1` is the most important, `s_1` is large, and the summary is mostly `kv_1`.
+
+**Per-dimension version (what DeepSeek actually does):**
+
+The scalar version gives one importance score per token. That means all 512 dimensions of that token's KV vector get scaled by the same number.
+
+But what if `tok_0` has useful information in dimensions 0-100, and `tok_2` has useful information in dimensions 300-400? A single scalar cannot capture that.
+
+So instead of one score per token, DeepSeek computes **one score per token per dimension** — 512 scores per token:
+
+```
+Group: [kv_0, kv_1, kv_2, kv_3]   each is 512-dim
+
+scores per token per dim:
+  tok_0: [s_0_dim0, s_0_dim1, ..., s_0_dim511]   ← 512 numbers
+  tok_1: [s_1_dim0, s_1_dim1, ..., s_1_dim511]   ← 512 numbers
+  tok_2: [s_2_dim0, s_2_dim1, ..., s_2_dim511]   ← 512 numbers
+  tok_3: [s_3_dim0, s_3_dim1, ..., s_3_dim511]   ← 512 numbers
+
+softmax across the 4 tokens, per dimension:
+  dim 0:  softmax([s_0_dim0, s_1_dim0, s_2_dim0, s_3_dim0])  → which token owns dim 0
+  dim 1:  softmax([s_0_dim1, s_1_dim1, s_2_dim1, s_3_dim1])  → which token owns dim 1
+  ...
+  dim 511: softmax over 4 tokens → which token owns dim 511
+
+summary = weighted sum   → each dimension independently picks its best token
+```
+
+Result: a single 512-dim summary vector where different dimensions can come from different tokens. Much more informative than scalar weighting.
+
+### Step 3: Overlapping groups — no hard boundaries
+
+Non-overlapping groups create a problem. Imagine the group boundary falls right between two highly related tokens:
+
+```
+Group 1: [tok_0, tok_1, tok_2, tok_3]  →  summary_0
+Group 2: [tok_4, tok_5, tok_6, tok_7]  →  summary_1
+```
+
+If `tok_3` and `tok_4` are closely related (say, two parts of the same sentence), they end up in completely separate summaries and never influence each other. Information gets cut off at the boundary.
+
+DeepSeek fixes this by using **overlapping windows** — each summary draws from multiple adjacent groups. `tok_3` contributes to both `summary_0` and `summary_1`. No hard cuts.
+
+---
+
+## Part 6: DSA — Sparse Selection on Top of Compression
+
+Even after compressing 4:1, at 1M tokens you still have 250,000 summary tokens. Full attention over 250,000 entries is still expensive.
+
+So DeepSeek adds one more step: a fast **scorer** (called the lightning indexer) that quickly evaluates all 250,000 summaries and picks only the top-k most relevant ones for the actual attention computation.
+
+```
+250,000 compressed summaries
+        ↓  lightning indexer scores each one cheaply
+top-k selected  (say k=1000)
+        ↓
+actual attention computed only on those 1000
+```
+
+This is called **DSA (DeepSeek Sparse Attention)**. CSA = compression + DSA together.
+
+---
+
+## Part 7: The Full CSA Pipeline, Step by Step
+
+```
+At token t=999, local window=8, compress ratio=4:
+
+STEP 1: Project all past tokens to 512-dim KV entries
+        [tok_0...tok_998] → [kv_0...kv_998]   each 512-dim
+
+STEP 2: Local window
+        kv_992 to kv_998 → exact attention, no compression
+
+STEP 3: Compress old tokens (kv_0 to kv_991)
+        Group into 4s with overlapping windows
+        Score each token per dimension
+        Weighted sum → 248 summary entries (from 992 old tokens)
+
+STEP 4: DSA sparse selection
+        Score 248 summaries → pick top-k (say k=64)
+
+STEP 5: Attend to: 8 local (exact) + 64 selected summaries = 72 total
+        Instead of 999 tokens in standard attention
+```
+
+---
+
+## Part 8: Why it is called Sparse
+
+The full attention matrix would be `T x T` — every cell filled. CSA leaves most cells empty (zero) because most past tokens are either compressed away or not selected by DSA. Only the local window and selected summaries get non-zero attention weights. Sparse = mostly zeros.
+
+---
+
+## Part 9: HCA — Same Idea, More Aggressive
+
+HCA does the same compression but:
+- **No local window** — everything gets compressed, no exceptions
+- **Compress ratio = 128** instead of 4 — every 128 tokens becomes 1 summary
+
+At 1M tokens with ratio 128:
+```
+1,000,000 tokens → 7,812 summary tokens
+```
+
+Dense attention over 7,812 entries is already cheap — no DSA needed. The compression alone is enough.
+
+HCA is not trying to be precise. It gives the model a rough global picture of the whole sequence cheaply. Good for early layers where you just need to know "what is this sequence generally about" before doing any detailed processing.
+
+### CSA vs HCA side by side
+
+```
+CSA:
+  local window  →  exact attention on recent tokens
+  old tokens    →  compress 4:1, then sparse select top-k
+  purpose       →  local detail + compressed history
+  cost          →  medium
+
+HCA:
+  no local window
+  all tokens    →  compress 128:1, dense attention on summaries
+  purpose       →  cheap broad global context
+  cost          →  very low
+```
+
+---
+
+## Part 10: The Hybrid Architecture — How DeepSeek Stacks Them
+
+Different layers in a transformer need different things. DeepSeek matches the right attention type to what each layer actually needs.
+
+### Early layers (Layer 1-2): HCA only
+
+The model has not built any useful representations yet. Doing precise local attention this early is wasted effort. What you need first is a rough sense of the whole sequence — what is the general topic, what are the main ideas.
+
+HCA is perfect here. Cheap, global, approximate. Think of it as the model skimming the whole document before reading carefully.
+
+### Middle layers (alternating HCA + CSA): Both
+
+Once the model has a global picture, it needs to refine its representations. It alternates:
+
+- **CSA layer** — zoom in, do precise local work, look carefully at recent context and selected history
+- **HCA layer** — zoom out, refresh the global picture
+- **CSA layer** — zoom in again with updated representations
+- ...
+
+Each pass makes the representations sharper. The model builds understanding incrementally without ever paying quadratic cost.
+
+### Last layer: Full attention
+
+One final layer of exact, unrestricted attention over all tokens. Whatever detail the compression blurred gets recovered here. This is the expensive layer, but only one layer pays this cost. The output from this layer directly produces the logits.
+
+### Visual
+
+```
+Input tokens
+     |
+  [Layer 1]  ← HCA         cheap global summary
+  [Layer 2]  ← HCA         cheap global summary
+  [Layer 3]  ← CSA         zoom in, local detail
+  [Layer 4]  ← HCA         zoom out, global refresh
+  [Layer 5]  ← CSA         zoom in, local detail
+  [Layer 6]  ← HCA         zoom out, global refresh
+     ...
+  [Layer N-1]← CSA
+  [Layer N]  ← Full Attention   one precise final readout
+     |
+Output logits
+```
+
+### The numbers this achieves
+
+Compared to DeepSeek V3.2 at 1M token context:
+
+| Metric | Before (V3.2) | After (V4 Pro) |
 |---|---|---|
-| Compute per token | O(T) | O(w + T/r) |
-| KV cache size | O(T) | O(w + T/r) |
-| Recent context | Exact | Exact |
-| Old context | Exact | Approximate (compressed) |
-| Information loss | None | Yes, in old context |
-| Suitable for long context | No | Yes |
+| Inference compute | 100% | 27% |
+| KV cache memory | 100% | 10% |
 
 ---
 
-## How Compression Works in Detail
+## Part 11: Summary — The One Table You Need
 
-The compressor is a linear layer:
-
-```
-compressor = nn.Linear(D * r, D)
-```
-
-For a group of `r` consecutive old tokens with embeddings `[e_1, e_2, ..., e_r]`, each of dimension `D`:
-
-1. Concatenate them: `[e_1 || e_2 || ... || e_r]` → shape `[r * D]`
-2. Project: `compressor([e_1 || ... || e_r])` → shape `[D]`
-
-The result is a single vector of dimension `D` that summarizes `r` tokens. This vector gets its own K and V projections and participates in attention just like a real token.
-
-The key point is that the compressor is trained end-to-end with the rest of the model. It learns to preserve the information that downstream attention actually uses. It is not a heuristic — it is a learned function.
-
----
-
-## Implementation
-
-Below is a complete non-production implementation in PyTorch for understanding purposes.
-
-```python
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import math
-
-
-class CompressedSparseAttention(nn.Module):
-    def __init__(
-        self,
-        d_model: int = 64,
-        n_heads: int = 4,
-        local_window: int = 8,
-        compress_ratio: int = 4,
-    ):
-        super().__init__()
-        self.d_model = d_model
-        self.n_heads = n_heads
-        self.d_head = d_model // n_heads
-        self.local_window = local_window
-        self.compress_ratio = compress_ratio
-
-        self.W_q = nn.Linear(d_model, d_model)
-        self.W_k = nn.Linear(d_model, d_model)
-        self.W_v = nn.Linear(d_model, d_model)
-        self.W_o = nn.Linear(d_model, d_model)
-
-        # Learned compression: r tokens → 1 summary token
-        self.compressor = nn.Linear(d_model * compress_ratio, d_model)
-
-    def compress_old_tokens(self, old_tokens: torch.Tensor):
-        """
-        old_tokens: [B, T_old, D]
-        returns:    [B, T_old // r, D]
-        """
-        B, T_old, D = old_tokens.shape
-        trim = T_old - (T_old % self.compress_ratio)
-        old_tokens = old_tokens[:, :trim, :]
-
-        if trim == 0:
-            return None
-
-        # Group r tokens together, project to single summary
-        grouped = old_tokens.reshape(
-            B,
-            trim // self.compress_ratio,
-            self.compress_ratio * D
-        )
-        return self.compressor(grouped)    # [B, trim//r, D]
-
-    def split_heads(self, x: torch.Tensor) -> torch.Tensor:
-        B, T, D = x.shape
-        return x.reshape(B, T, self.n_heads, self.d_head).permute(0, 2, 1, 3)
-
-    def attention(self, q, k, v) -> torch.Tensor:
-        scale = math.sqrt(self.d_head)
-        scores = torch.matmul(q, k.transpose(-2, -1)) / scale
-        weights = F.softmax(scores, dim=-1)
-        return torch.matmul(weights, v)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        x: [B, T, D]
-        """
-        B, T, D = x.shape
-        Q = self.W_q(x)
-        K = self.W_k(x)
-        V = self.W_v(x)
-
-        outputs = []
-
-        for t in range(T):
-            q_t = Q[:, t:t+1, :]
-
-            # Local window: exact attention
-            local_start = max(0, t - self.local_window + 1)
-            k_local = K[:, local_start:t+1, :]
-            v_local = V[:, local_start:t+1, :]
-
-            # Old tokens: compressed attention
-            if local_start > 0:
-                old_tokens = x[:, :local_start, :]
-                compressed = self.compress_old_tokens(old_tokens)
-            else:
-                compressed = None
-
-            if compressed is not None:
-                k_comp = self.W_k(compressed)
-                v_comp = self.W_v(compressed)
-                k_all = torch.cat([k_comp, k_local], dim=1)
-                v_all = torch.cat([v_comp, v_local], dim=1)
-            else:
-                k_all = k_local
-                v_all = v_local
-
-            q_h = self.split_heads(q_t)
-            k_h = self.split_heads(k_all)
-            v_h = self.split_heads(v_all)
-
-            out_h = self.attention(q_h, k_h, v_h)
-            out = out_h.permute(0, 2, 1, 3).reshape(B, 1, D)
-            outputs.append(out)
-
-        out = torch.cat(outputs, dim=1)
-        return self.W_o(out)
-```
-
----
-
-## Walking Through a Concrete Example
-
-Assume:
-- Sequence length `T = 32`
-- Local window `w = 8`
-- Compress ratio `r = 4`
-
-For token at position `t = 24`:
-
-```
-Local window tokens: positions 17 to 24  → 8 tokens, exact attention
-Old tokens: positions 0 to 16           → 17 tokens
-After trim to divisible by 4: 16 tokens → 16 / 4 = 4 summary tokens
-Total KV size: 8 + 4 = 12
-Standard attention KV size: 25
-```
-
-For token at position `t = 31`:
-
-```
-Local window tokens: positions 24 to 31 → 8 tokens, exact attention
-Old tokens: positions 0 to 23          → 24 tokens → 6 summary tokens
-Total KV size: 8 + 6 = 14
-Standard attention KV size: 32
-```
-
-As `T` grows, the savings compound. At `T = 1,000,000` with `w = 512` and `r = 8`:
-
-```
-Standard attention KV size per token: 1,000,000
-CSA KV size per token:                512 + (999,488 / 8) = 125,448
-Reduction:                            ~8x in KV size
-```
-
----
-
-## Limitations
-
-**Information loss in old context.** The compression is lossy. If a critical piece of information from far back in the sequence needs precise retrieval, CSA may fail where standard attention would not. The compressor learns to preserve what is statistically useful, not necessarily what is specifically needed for a given query.
-
-**Compression is uniform.** Every group of `r` tokens gets the same compression treatment regardless of content. More sophisticated variants (like learned routing or importance-based selection) could improve this, but add complexity.
-
-**Token order within groups.** The reshape-and-project compressor sees `r` tokens concatenated in order. It does not have positional information about which token within the group contributed what. More sophisticated compressors use attention within the group before projecting.
-
-**Not a drop-in replacement.** The local window assumption breaks for tasks where distant tokens are heavily referenced. Retrieval-heavy tasks, long-range coreference resolution, or tasks where the answer depends on the first few tokens of a very long document may suffer.
-
----
-
-## How CSA Fits into a Hybrid Architecture
-
-In practice, models like DeepSeek-V4-Pro do not use CSA for every layer. They use a **hybrid** strategy:
-
-- Some layers use CSA (cheap, good for local patterns and compressed global context)
-- Some layers use standard full attention (expensive but exact, used sparingly)
-- Some layers use HCA (Heavily Compressed Attention — even more aggressive compression than CSA)
-
-The intuition is that not every layer needs full global attention. Early layers can build local representations cheaply. A few carefully placed full-attention layers can then integrate global context. This combination gives near-full-attention quality at a fraction of the cost.
-
----
-
-## Summary
-
-CSA is a structured approximation to full attention that exploits the locality assumption — nearby tokens matter more than distant ones. It achieves this by:
-
-1. Attending exactly to a local window of recent tokens
-2. Attending approximately to a learned compression of older tokens
-3. Keeping the KV cache proportional to `w + T/r` instead of `T`
-
-The compression is learned end-to-end, which means the model decides what to preserve. The tradeoff is approximate recall of old context in exchange for dramatically reduced compute and memory at long sequence lengths.
+| | Full Attention | CSA | HCA |
+|---|---|---|---|
+| Local precision | Exact | Exact (window) | None |
+| Global coverage | Exact | Approximate | Very approximate |
+| KV cache | O(T) | O(k + w) | O(T/128) |
+| Compute | O(T²) | Much less | Very little |
+| When used in V4 | Last layer only | Middle layers | First 2 + middle layers |
