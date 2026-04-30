@@ -308,7 +308,7 @@ if __name__ == "__main__":
     # Run all three
     residual_norms = measure_signal_growth(ResidualBlock,           d_model, n_layers, n_streams, use_streams=False)
     hc_norms       = measure_signal_growth(HyperConnection,         d_model, n_layers, n_streams, use_streams=True)
-    mhc_norms      = measure_signal_growth(ManifoldHyperConnection, d_model, n_layers, n_streams, use_streams=True)
+    # mhc_norms      = measure_signal_growth(ManifoldHyperConnection, d_model, n_layers, n_streams, use_streams=True)
 
     # Print table
     print(f"{'Layer':<8} {'Residual norm':<18} {'HC norm':<18} {'mHC norm':<18} {'HC/Residual ratio'}")
@@ -319,7 +319,7 @@ if __name__ == "__main__":
             f"{i:<8} "
             f"{residual_norms[i]:<18.2f} "
             f"{hc_norms[i]:<18.2f} "
-            f"{mhc_norms[i]:<18.2f} "
+            # f"{mhc_norms[i]:<18.2f} "
             f"{ratio:.2f}x"
         )
 
@@ -327,7 +327,7 @@ if __name__ == "__main__":
     print("Observations:")
     print(f"  Residual final norm : {residual_norms[-1]:.2f}  (stable)")
     print(f"  HC final norm       : {hc_norms[-1]:.2f}  (can explode at scale)")
-    print(f"  mHC final norm      : {mhc_norms[-1]:.2f}  (stable, like residual)")
+    # print(f"  mHC final norm      : {mhc_norms[-1]:.2f}  (stable, like residual)")
     print()
 
     # Verify Birkhoff Polytope constraint on a sample matrix
@@ -345,10 +345,10 @@ if __name__ == "__main__":
     print("Parameter counts:")
     res = ResidualBlock(d_model)
     hc  = HyperConnection(d_model, n_streams)
-    mhc = ManifoldHyperConnection(d_model, n_streams)
+    # mhc = ManifoldHyperConnection(d_model, n_streams)
     print(f"  Residual : {sum(p.numel() for p in res.parameters()):,}")
     print(f"  HC       : {sum(p.numel() for p in hc.parameters()):,}  (+A, +B matrices)")
-    print(f"  mHC      : {sum(p.numel() for p in mhc.parameters()):,}  (same as HC, just constrained)")
-    print()
-    print("mHC adds ZERO extra parameters over HC.")
-    print("The constraint is enforced algorithmically (Sinkhorn-Knopp), not by adding params.")
+    # print(f"  mHC      : {sum(p.numel() for p in mhc.parameters()):,}  (same as HC, just constrained)")
+    # print()
+    # print("mHC adds ZERO extra parameters over HC.")
+    # print("The constraint is enforced algorithmically (Sinkhorn-Knopp), not by adding params.")
