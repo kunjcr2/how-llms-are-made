@@ -174,3 +174,9 @@ where $A \in \mathbb{R}^{d \times r}$ and $B \in \mathbb{R}^{r \times d}$ and $r
 - `q_proj` and `v_proj` are the default because Q and V control what the model attends to and what it extracts — the most semantically meaningful projections.
 - MLP layers (`gate_proj`, `up_proj`, `down_proj`) are where transformers store factual associations — hit these when injecting domain knowledge.
 - No theoretical formula exists for which layers to pick. It is empirical. `r` matters more than module selection in most cases.
+
+### 31. What is jailbroken model?
+- LLMs that were trained to be safe and helpful can still be tricked by "Jailbreaks", and this happens cuz of 2 reasons.
+    1. Competing objectives - Model's ability of helpfullness and harmlessness conflict with each other, and it favours helpfullness, leading to harmful response.
+    2. Mismatched generation - Model has learnt a lots of abilities, but its safety training doesnt cover the vulnerabilities in ALL sections, leading to model getting jailbroken on those parts.
+- These two has led to a lots of GPT-4, Claude v1.3 and more getting **Jailbroken**. 
