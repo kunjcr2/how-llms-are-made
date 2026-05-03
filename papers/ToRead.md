@@ -7,7 +7,7 @@
 - [DONE] SafeRLHF (Dai et al., ICLR 2024) — NEW, directly addresses safety-aligned fine-tuning, exactly what JD asks for
 
 **Week 2 — Jailbreaking foundations**
-- Jailbroken: How Does LLM Safety Training Fail? (Wei et al., 2023)
+- [DONE] Jailbroken: How Does LLM Safety Training Fail? (Wei et al., 2023)
 - Universal and Transferable Adversarial Attacks / GCG (Zou et al., 2023)
 - PAIR: Jailbreaking Black Box LLMs in Twenty Queries (Chao et al., 2023)
 - TAP: Tree of Attacks with Pruning (Mehrotra et al., 2024)
