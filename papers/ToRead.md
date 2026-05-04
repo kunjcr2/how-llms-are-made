@@ -1,14 +1,13 @@
 **Week 1 — RLHF & alignment foundations**
 - [DONE] InstructGPT (Ouyang et al., 2022)
 - [DONE] PPO (Schulman et al., 2017)
-- [SKIP] Scaling Laws for Reward Model Overoptimization (Gao et al., 2022)
 - [DONE] DPO (Rafailov et al., 2023)
 - [DONE] Constitutional AI (Bai et al., 2022)
 - [DONE] SafeRLHF (Dai et al., ICLR 2024) — NEW, directly addresses safety-aligned fine-tuning, exactly what JD asks for
 
 **Week 2 — Jailbreaking foundations**
 - [DONE] Jailbroken: How Does LLM Safety Training Fail? (Wei et al., 2023)
-- Universal and Transferable Adversarial Attacks / GCG (Zou et al., 2023)
+- [DONE] Universal and Transferable Adversarial Attacks / GCG (Zou et al., 2023)
 - PAIR: Jailbreaking Black Box LLMs in Twenty Queries (Chao et al., 2023)
 - TAP: Tree of Attacks with Pruning (Mehrotra et al., 2024)
 - AutoDAN-Turbo (Liu et al., ICLR 2025) — current SOTA automated red-teaming
@@ -34,12 +33,11 @@
 - OWASP Top 10 for LLM Applications 2025
 
 **Week 4 side quest — tooling (1-2 days each, hands-on)**
-- Garak (NVIDIA) — run against an open model, document findings
-- PyRIT (Microsoft) — skim docs
-- Inspect (UK AISI) — modern eval framework
-- Run AgentDojo locally — direct portfolio talking point
+- [ACTIVITY] Garak (NVIDIA) — run against an open model, document findings
+- [ACTIVITY] PyRIT (Microsoft) — skim docs
+- [ACTIVITY] Inspect (UK AISI) — modern eval framework
+- [ACTIVITY] Run AgentDojo locally — direct portfolio talking point
 
 **Optional / stretch (only if ahead of schedule)**
-- Sleeper Agents (Hubinger et al., Anthropic 2024) — alignment intuition
 - Visual Adversarial Examples Jailbreak Aligned LLMs (Qi et al., 2024) — multimodal angle, JD mentions multimodal
 - Latent Adversarial Training (Sheshadri et al., 2024) — frontier defense technique
