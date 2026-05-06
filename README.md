@@ -2,6 +2,8 @@
 
 A comprehensive repository covering Large Language Models from fundamentals to advanced architectures. Includes theory, hands-on notebooks, from-scratch implementations, fine-tuning pipelines, and trained artifacts. Built entirely in 2025.
 
+---
+
 ## Highlight: MedAssistGPT
 
 A 401M parameter medical domain LLM, pretrained from scratch on 2 million PubMed abstracts.
@@ -23,51 +25,88 @@ A 401M parameter medical domain LLM, pretrained from scratch on 2 million PubMed
 
 **Links:** [HuggingFace Model](https://huggingface.co/kunjcr2/MedAssist-GPT-401M)
 
-See `MedAssistGPT/` for full implementation.
+See `models/MedAssistGPT/` for full implementation.
 
 ---
 
 ## Repository Structure
 
-### tutorials/
+```
+llms-from-scratch/
+├── llms/               # Tutorials and implementations
+├── models/             # Trained model artifacts
+├── docs/               # Notes, theory, and deep dives
+├── vision/             # Computer vision models
+├── basics/             # ML math and PyTorch fundamentals
+├── papers.md           # Curated paper list with links
+└── ToRead.md           # Active reading list
+```
 
-#### DeepSeek (`tutorials/deepseek/`)
+---
+
+### llms/
+
+#### DeepSeek (`llms/deepseek/`)
+
 Complete implementation and documentation of DeepSeek architecture:
 
-| Topic | Description |
-|-------|-------------|
-| Multi-Head Latent Attention (MLA) | KV cache compression via latent matrices, absorbed queries |
-| Mixture of Experts (MoE) | Sparse expert routing, auxiliary loss, load balancing |
-| Shared Experts | Always-activated experts for knowledge redundancy |
-| Fine-grained Expert Segmentation | Specialized experts with smaller dimensions |
-| Auxiliary Loss-Free Load Balancing | Bias-based routing without loss penalties |
-| RoPE + MLA Integration | Decoupled RoPE application in latent attention |
-| Multi-Token Prediction (MTP) | Predicting multiple future tokens |
+**Notes (`llms/deepseek/notes/`):**
 
-**Code files:** Expert routing, MoE base, noisy top-k, RMSNorm, RoPE, complete DeepSeek implementation notebook.
+| File | Topic |
+|------|-------|
+| `MultiHeadLatentAttention.md` | KV cache compression via latent matrices, absorbed queries |
+| `MixtureOfExperts.md` | Sparse expert routing, auxiliary loss, load balancing |
+| `RotaryPositionalEncoding.md` | RoPE derivation, complex number formulation, MLA integration |
+| `SinusoidalPositionalEncoding.md` | Integer, binary, sinusoidal positional encoding theory |
+| `KVCache.md` | KV cache mechanics, memory layout, eviction strategies |
+| `CompressedSparseAttention.md` | Sparse attention patterns and compression |
+| `MTP_technical.md` | Multi-Token Prediction technical implementation |
+| `MTP_theoritical.md` | Multi-Token Prediction theory |
+| `ManifoldConstraintHyperConnection.md` | Manifold constraints and hyper-connections |
 
-#### GPT Pipeline (`tutorials/gpt/`)
+**Code (`llms/deepseek/codes/`):** Expert routing, MoE base, noisy top-k, RMSNorm, RoPE, complete DeepSeek implementation notebook.
+
+---
+
+#### GPT (`llms/gpt/`)
+
 End-to-end tutorials for building GPT from scratch:
 
-1. **Tokenization** - tiktoken implementation
-2. **Attention** - Self-attention and multi-head attention
-3. **Architecture** - Full GPT model construction
-4. **Training** - Training loops with gradient checkpointing
-5. **Post-training** - Techniques after pretraining
-6. **Fine-tuning** - LoRA and full fine-tuning methods
+| Step | Folder | Content |
+|------|--------|---------|
+| 1 | `1_tokenizer/` | tiktoken implementation |
+| 2 | `2_attention/` | Self-attention and multi-head attention |
+| 3 | `3_architecture/` | Full GPT model construction |
+| 4 | `4_training/` | Training loops with gradient checkpointing |
+| 5 | `5_post_training/` | Techniques after pretraining |
+| 6 | `6_finetune/` | LoRA and full fine-tuning |
 
-#### Mamba (`tutorials/mamba/`)
+---
+
+#### Mamba (`llms/mamba/`)
+
 State Space Models as transformer alternatives:
 
-- **State Space Models (SSM)** - Linear RNNs with discretization, A/B/C/Delta matrices, GPU-parallelizable convolutions
-- **Selective State Space Models (SSSM)** - Input-dependent parameters, parallel associative scan, SRAM optimization
+| File | Topic |
+|------|-------|
+| `StateSpaceModels.md` | Linear RNNs with discretization, A/B/C/Delta matrices, GPU-parallelizable convolutions |
+| `SelectiveStateSpaceModels.md` | Input-dependent parameters, parallel associative scan, SRAM optimization |
+| `Mamba.md` | Full Mamba architecture deep dive |
+| `mamba.py` | From-scratch implementation |
+| `mamba.ipynb` | Interactive notebook |
 
-#### Mixture of Depths - Kimi (`tutorials/mod/`)
+---
+
+#### Mixture of Depths (`llms/mod/`)
+
 Google DeepMind's dynamic compute allocation:
 
-- **What is MoD** - Top-k routing, per-token layer skipping, static computation graphs
-- **How MoD Works** - Per-block routing, residual paths, MoDE (combined with MoE)
-- Up to 50% FLOPs reduction while maintaining performance
+| File | Topic |
+|------|-------|
+| `what_is_mod.md` | Top-k routing, per-token layer skipping, static computation graphs |
+| `how_mod_work.md` | Per-block routing, residual paths, MoDE (combined with MoE) |
+
+Up to 50% FLOPs reduction while maintaining performance.
 
 ---
 
@@ -75,50 +114,103 @@ Google DeepMind's dynamic compute allocation:
 
 | Model | Description |
 |-------|-------------|
-| **MedAssistGPT** | 401M medical LLM with RoPE, GQA, SwiGLU |
-| **GPT-155M** | GPT from scratch, 155M parameters |
-| **GPT-211M** | GPT from scratch, 211M parameters |
+| **MedAssistGPT** | 401M medical LLM pretrained on PubMed — RoPE, GQA, SwiGLU |
 | **GatorGPT** | Modern transformer with GQA, RoPE, SwiGLU, vLLM ready |
-| **Qwen2.5 DPO** | Qwen 2.5 fine-tuned with Direct Preference Optimization |
-| **Flan-T5** | Fine-tuned Flan-T5 |
-| **GPT2-Med** | Fine-tuned GPT-2 Medium |
-| **LLaMA 3-3B LoRA** | LoRA adapters for LLaMA 3-3B on OpenHermes |
-| **Tinymorfer** | Experimental compact architecture |
+| **gpt155m** | GPT from scratch, 155M parameters |
+| **gpt211m** | GPT from scratch, 211M parameters |
+| **qwen2.5-0.5b-sft-dpo** | Qwen 2.5 fine-tuned with SFT then DPO |
+| **flan-t5-finetuned** | Fine-tuned Flan-T5 |
+| **gemma2-9b** | Gemma 2 9B experiments |
+| **llama3-3b-lora-openhermes** | LoRA adapters for LLaMA 3-3B on OpenHermes |
+| **llm-firewall** | LLM safety classifier / adversarial defense project |
+| **AdaptRoute** | Adaptive routing experiments |
+| **GAN** | Generative Adversarial Network implementation |
+| **SVD** | SVD-based model compression |
+| **SimpleML** | Foundational ML models |
+| **neural-sort** | Neural network sorting experiments |
 
 ---
 
 ### docs/
 
-#### RLHF (`docs/RLHF/`)
-Complete implementations with theory:
-
-| Component | Files |
-|-----------|-------|
-| Reward Model | Theory (`.md`) + Implementation (`.py`) |
-| Proximal Policy Optimization (PPO) | Theory (`.md`) + Implementation (`.py`) |
-| Direct Preference Optimization (DPO) | Theory (`.md`) + Implementation (`.py`) |
-
 #### Reinforcement Learning (`docs/RL/`)
-Foundations for LLM alignment: 4 lectures covering RL basics to RLHF.
+
+A complete 20-lecture RL series from fundamentals to LLM alignment:
+
+| Lecture | Topic |
+|---------|-------|
+| 01 | RL Fundamentals |
+| 02 | Markov Decision Process |
+| 03 | Epsilon-Greedy Exploration |
+| 04 | Value Functions |
+| 05 | Dynamic Programming |
+| 06 | Monte Carlo Methods |
+| 07 | Temporal Difference Learning |
+| 08 | TD Control (SARSA, Q-Learning) |
+| 09 | Value Function Approximation |
+| 10 | Policy Gradient Theorem |
+| 11 | Deep Q-Network (DQN) |
+| 12 | REINFORCE |
+| 13 | Advantage Function |
+| 14 | KL Divergence |
+| 15 | TRPO |
+| 16 | PPO |
+| 17 | RL for LLMs |
+| 18 | Reward Model |
+| 19 | DPO |
+| 20 | GRPO |
+
+Also includes `rl_mindmap.html` — interactive visual map of the full RL landscape.
+
+---
 
 #### Reasoning Models (`docs/Reasoning Models/`)
-Notes on reasoning capabilities across 4 lectures with code.
+
+Notes across 4 lectures on LLM reasoning capabilities and implementation, with code notebook.
+
+---
+
+#### RAG (`docs/rag/`)
+
+Retrieval-Augmented Generation — 2 lecture notes covering basics to implementation.
+
+---
 
 #### ML and DL Fundamentals (`docs/ml-and-dl/`)
 
-| Topic | Description |
-|-------|-------------|
-| Flash Attention | Memory-efficient attention |
-| Sliding Window Attention | Local attention patterns |
-| ALiBi | Attention with Linear Biases |
-| Gated Linear Units (GLU) | SwiGLU, GeGLU activations |
-| Encoder-only Architectures | BERT-style models |
-| vLLM | High-throughput inference |
-| Supervised Fine-tuning | Data preprocessing pipelines |
-| Backpropagation | Theory and notebook |
-| PyTorch Lightning | Training with LightningModule |
+| File | Topic |
+|------|-------|
+| `FrontierLLMTraining.md` | Full-stack frontier LLM training: memory, parallelism, MoE, precision, fault tolerance |
+| `FlashAttention.md` | SRAM tiling, online softmax, memory complexity |
+| `SlidingWindowAttention.md` | Local attention patterns |
+| `AliBi.md` | Attention with Linear Biases |
+| `GatedLinearUnit.md` | SwiGLU, GeGLU activations |
+| `EncoderOnly.md` | BERT-style encoder-only architectures |
+| `FourierTransform.md` | Fourier Transform theory for signal processing |
+| `BackPropogation.md` | Backpropagation theory |
+| `BackProp.ipynb` | Interactive backpropagation notebook |
+| `LightningModule.md` | Training with PyTorch Lightning |
+| `SupervisedFinetuning-DataPreprocess.md` | SFT data preprocessing pipelines |
+| `Prompt.md` | Prompt engineering techniques |
+| `AK_GPT.md` | GPT from scratch notes (Karpathy-style) |
+| `AK_BetterModel.md` | Improving GPT — modern techniques |
+
+---
+
+#### Evaluation (`docs/eval/`)
+
+| File | Topic |
+|------|-------|
+| `bleu/` | BLEU score implementation and documentation |
+| `MLEval/MLEvalCla.md` | ML classification evaluation metrics |
+| `MLEval/MLEvalReg.md` | ML regression evaluation metrics |
+| `MLEval/MLEvalCla.py` | Classification evaluation implementation |
+| `MLEval/MLEvalReg.py` | Regression evaluation implementation |
+
+---
 
 #### Optimization (`docs/optimization/`)
+
 - Introduction to Optimization
 - SGD Optimizer
 - Momentum Gradient Descent
@@ -127,39 +219,65 @@ Notes on reasoning capabilities across 4 lectures with code.
 
 ---
 
-### vision/
+#### Real Problems (`docs/RealProblems.md`)
 
-| Model | Files |
-|-------|-------|
-| Vision Transformers (ViT) | Demo notebook |
-| Swin Transformers | Theory (`.md`) + Implementation (`.py`) |
-| Detection Transformer (DETR) | Theory (`.md`) + Implementation (`.py`) |
-| TinyViT | Implementation (`.py`) |
-| DeiT | Data-efficient Image Transformers (`.md`) |
-| CNNs | Convolutional Neural Networks (`.md`) |
-| Contrastive Learning | CLIP-style (`.md` + `.py`) |
-| Vision-Language Models | Theory (`.md`) + Implementation (`.py`) |
+Notes on real-world production challenges in deploying LLMs.
 
 ---
 
-### eval/
-- **BLEU** - Score implementation and documentation for text generation evaluation
+### vision/
 
-### rag/
-Retrieval-Augmented Generation notes and implementations.
+#### Notes (`vision/notes/`)
 
-### papers/
-Research papers referenced throughout:
-- Attention Is All You Need
-- GPT-2
-- DeepSeek V3
-- DeepSeek MoE
-- Mixture of Depths (MoD)
-- Vision Transformers
-- Layer Normalization
-- Residual Connections
-- Sparse Attention
-- And more
+| File | Topic |
+|------|-------|
+| `CNN.md` | Convolutional Neural Networks |
+| `DeiT.md` | Data-efficient Image Transformers |
+| `SwinTransformers.md` | Swin Transformer architecture |
+| `DetectionTransformer.md` | DETR — object detection with transformers |
+| `ContrastiveLearning.md` | Contrastive learning theory |
+| `CLIP.md` | CLIP — vision-language contrastive pretraining |
+| `VisionLanguageModels.md` | Vision-language model architectures |
+| `Flamingo.md` | Flamingo multimodal LLM |
+| `LLaVA.md` | LLaVA visual instruction tuning |
+| `SegmentAnythingModel.md` | SAM architecture and zero-shot segmentation |
+| `TimeSformer.md` | Transformer for video understanding |
+| `DDPM.md` | Denoising Diffusion Probabilistic Models |
+
+#### Code (`vision/code/`)
+
+| File | Description |
+|------|-------------|
+| `SwinTransformers.py` | Swin Transformer implementation |
+| `DetectionTransformer.py` | DETR implementation |
+| `TinyViT.py` | Compact ViT implementation |
+| `ContrastiveLearning.py` | Contrastive learning implementation |
+| `CLIP.py` | CLIP implementation |
+| `VisionLanguageModels.py` | VLM implementation |
+| `Flamingo.py` | Flamingo implementation |
+| `SegmentAnythingModel.py` | SAM implementation |
+| `TimeSformer.py` | TimeSformer implementation |
+| `DDPM.py` | Diffusion model implementation |
+| `ViT_demo.ipynb` | Vision Transformer demo notebook |
+
+---
+
+### basics/
+
+Foundational material organized into three areas:
+
+| Folder | Content |
+|--------|---------|
+| `architectures/` | Core neural network architectures |
+| `ml_math/` | Mathematical foundations |
+| `quicky_pytorch/` | Quick-reference PyTorch patterns |
+
+---
+
+## Papers and Reading
+
+- **`papers.md`** — Curated list of all key papers with links, grouped by topic (Architecture, MoE, Efficiency, Alignment, Safety, Fine-tuning)
+- **`ToRead.md`** — Active weekly reading list tracking paper progress
 
 ---
 
@@ -180,13 +298,13 @@ cd llms-from-scratch
 
 ### Recommended Learning Path
 
-1. **Start with GPT:** `tutorials/gpt/` - Build a transformer from scratch
-2. **Explore DeepSeek:** `tutorials/deepseek/` - Modern architecture innovations
-3. **Understand Mamba:** `tutorials/mamba/` - Alternative to attention
-4. **Study Kimi/MoD:** `tutorials/mod/` - Dynamic compute allocation
-5. **Learn alignment:** `docs/RLHF/` - DPO, PPO, Reward Models
-6. **See trained models:** `models/` - Working implementations
-7. **Dive into vision:** `vision/` - ViT, Swin, contrastive learning
+1. **Start with GPT:** `llms/gpt/` — Build a transformer from scratch
+2. **Explore DeepSeek:** `llms/deepseek/` — Modern architecture innovations
+3. **Understand Mamba:** `llms/mamba/` — Alternative to attention
+4. **Study MoD:** `llms/mod/` — Dynamic compute allocation
+5. **Learn RL and alignment:** `docs/RL/` — 20-lecture series from RL basics to GRPO
+6. **See trained models:** `models/` — Working implementations
+7. **Dive into vision:** `vision/` — ViT, Swin, CLIP, SAM, diffusion
 
 ---
 
@@ -194,26 +312,25 @@ cd llms-from-scratch
 
 | Topic | Path |
 |-------|------|
-| Tokenizer | `tutorials/gpt/1_tokenizer/LLM_tokenizer.ipynb` |
-| Attention | `tutorials/gpt/2_attention/LLM_attention.ipynb` |
-| Architecture | `tutorials/gpt/3_architecture/LLM_GPT_arch.ipynb` |
-| Training | `tutorials/gpt/4_training/LLM_training.ipynb` |
-| Post-training | `tutorials/gpt/5_post_training/LLM_post_training.ipynb` |
-| LoRA Fine-tuning | `tutorials/gpt/6_finetune/LLM_LoRA_finetune.ipynb` |
-| Full Fine-tuning | `tutorials/gpt/6_finetune/LLM_full_finetune.ipynb` |
-| DeepSeek Complete | `tutorials/deepseek/Codes/deepseek_complete.ipynb` |
+| Tokenizer | `llms/gpt/1_tokenizer/LLM_tokenizer.ipynb` |
+| Attention | `llms/gpt/2_attention/LLM_attention.ipynb` |
+| Architecture | `llms/gpt/3_architecture/LLM_GPT_arch.ipynb` |
+| Training | `llms/gpt/4_training/LLM_training.ipynb` |
+| Post-training | `llms/gpt/5_post_training/LLM_post_training.ipynb` |
+| LoRA Fine-tuning | `llms/gpt/6_finetune/LLM_LoRA_finetune.ipynb` |
+| Full Fine-tuning | `llms/gpt/6_finetune/LLM_full_finetune.ipynb` |
+| DeepSeek Complete | `llms/deepseek/codes/deepseek_complete.ipynb` |
+| Mamba | `llms/mamba/mamba.ipynb` |
 | Backpropagation | `docs/ml-and-dl/BackProp.ipynb` |
-| ViT Demo | `vision/ViT_demo.ipynb` |
+| ViT Demo | `vision/code/ViT_demo.ipynb` |
 | Reasoning Models | `docs/Reasoning Models/Lec3_code.ipynb` |
-| GPT-155M | `models/GPT_155M/LLM_155M.ipynb` |
-| GPT-211M | `models/GPT_211M/LLM_211M.ipynb` |
-| Qwen 2.5 DPO | `models/Qwen2.5_dpo.ipynb` |
+| MedAssistGPT | `models/MedAssistGPT/MedAssistGPT.ipynb` |
+| GPT-155M | `models/gpt155m/LLM_155M.ipynb` |
+| GPT-211M | `models/gpt211m/LLM_211M.ipynb` |
+| Qwen 2.5 DPO | `models/qwen2.5-0.5b-sft-dpo/` |
+| LLM Firewall | `models/llm-firewall/` |
 
 ---
-
-## Contributing
-
-Contributions welcome. Open an issue or submit a pull request.
 
 ## License
 
