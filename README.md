@@ -23,7 +23,7 @@ A 401M parameter medical domain LLM, pretrained from scratch on 2 million PubMed
 - Automatic checkpointing and HuggingFace uploads
 - Weights and Biases integration
 
-**Links:** [HuggingFace Model](https://huggingface.co/kunjcr2/MedAssist-GPT-401M)
+**Links:** [HuggingFace Model](https://huggingface.co/kunjcr2/MedAssistGPT)
 
 See `models/MedAssistGPT/` for full implementation.
 

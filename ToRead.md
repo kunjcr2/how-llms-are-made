@@ -9,9 +9,9 @@
 - [DONE] Jailbroken: How Does LLM Safety Training Fail? (Wei et al., 2023)
 - [DONE] Universal and Transferable Adversarial Attacks / GCG (Zou et al., 2023)
 - [DONE] PAIR: Jailbreaking Black Box LLMs in Twenty Queries (Chao et al., 2023)
-- TAP: Tree of Attacks with Pruning (Mehrotra et al., 2024)
-- AutoDAN-Turbo (Liu et al., ICLR 2025) — current SOTA automated red-teaming
-- Crescendo (Russinovich et al., Microsoft, 2024) — multi-turn attacks
+- [DONE] TAP: Tree of Attacks with Pruning (Mehrotra et al., 2024)
+- [DOING] AutoDAN-Turbo (Liu et al., ICLR 2025) — current SOTA automated red-teaming
+- [DOING] Crescendo (Russinovich et al., Microsoft, 2024) — multi-turn attacks
 
 **Week 3 — Prompt injection** (A10's product surface)
 - Not What You've Signed Up For (Greshake et al., 2023)
