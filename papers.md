@@ -47,6 +47,7 @@
 - [Universal and Transferable Adversarial Attacks on Aligned Language Models (GCG)](https://arxiv.org/abs/2307.15043) — Zou et al., 2023
 - [Jailbreaking Black Box Large Language Models in Twenty Queries (PAIR)](https://arxiv.org/abs/2310.08419) — Chao et al., 2023
 - [Tree of Attacks with Pruning (TAP)](https://arxiv.org/abs/2312.02119) — Mehrotra et al., NeurIPS 2024
+- [AutoDAN-Turbo: A Lifelong Agent for Strategy Self-Exploration to Jailbreak LLMs](https://arxiv.org/abs/2410.05295) — Liu et al., ICLR 2025
 
 ---
 
