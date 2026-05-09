@@ -48,6 +48,8 @@
 - [Jailbreaking Black Box Large Language Models in Twenty Queries (PAIR)](https://arxiv.org/abs/2310.08419) — Chao et al., 2023
 - [Tree of Attacks with Pruning (TAP)](https://arxiv.org/abs/2312.02119) — Mehrotra et al., NeurIPS 2024
 - [AutoDAN-Turbo: A Lifelong Agent for Strategy Self-Exploration to Jailbreak LLMs](https://arxiv.org/abs/2410.05295) — Liu et al., ICLR 2025
+- [The Crescendo Multi-Turn LLM Jailbreak Attack](https://arxiv.org/abs/2404.01833) — Russinovich et al., Microsoft, 2024
+
 
 ---
 

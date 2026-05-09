@@ -10,8 +10,8 @@
 - [DONE] Universal and Transferable Adversarial Attacks / GCG (Zou et al., 2023)
 - [DONE] PAIR: Jailbreaking Black Box LLMs in Twenty Queries (Chao et al., 2023)
 - [DONE] TAP: Tree of Attacks with Pruning (Mehrotra et al., 2024)
-- [DOING] AutoDAN-Turbo (Liu et al., ICLR 2025) — current SOTA automated red-teaming
-- [DOING] Crescendo (Russinovich et al., Microsoft, 2024) — multi-turn attacks
+- [DONE] AutoDAN-Turbo (Liu et al., ICLR 2025) — current SOTA automated red-teaming
+- [DONE] Crescendo (Russinovich et al., Microsoft, 2024) — multi-turn attacks
 
 **Week 3 — Prompt injection** (A10's product surface)
 - Not What You've Signed Up For (Greshake et al., 2023)
