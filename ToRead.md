@@ -14,9 +14,8 @@
 - [DONE] Crescendo (Russinovich et al., Microsoft, 2024) — multi-turn attacks
 
 **Week 3 — Prompt injection** (A10's product surface)
-- Not What You've Signed Up For (Greshake et al., 2023)
-- Prompt Injection Attacks on LLMs: A Survey (2025)
-- AgentDojo (Debenedetti et al., NeurIPS 2024)
+- [DONE] Not What You've Signed Up For (Greshake et al., 2023)
+- [DOING] AgentDojo (Debenedetti et al., NeurIPS 2024)
 - Adaptive Attacks Break Defenses Against Indirect PI (Zhan et al., NAACL 2025)
 - Indirect Prompt Injections: Are Firewalls All You Need? (Shi et al., 2025)
 
