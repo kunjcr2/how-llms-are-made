@@ -15,8 +15,8 @@
 
 **Week 3 — Prompt injection** (A10's product surface)
 - [DONE] Not What You've Signed Up For (Greshake et al., 2023)
-- [DOING] AgentDojo (Debenedetti et al., NeurIPS 2024)
-- Adaptive Attacks Break Defenses Against Indirect PI (Zhan et al., NAACL 2025)
+- [DONE] AgentDojo (Debenedetti et al., NeurIPS 2024)
+- [DOING] Adaptive Attacks Break Defenses Against Indirect PI (Zhan et al., NAACL 2025)
 - Indirect Prompt Injections: Are Firewalls All You Need? (Shi et al., 2025)
 
 **Week 3.5 — Bias & toxicity** (NEW, JD explicitly mentions "bias detection")
@@ -31,12 +31,12 @@
 - WildGuard (Han et al., NeurIPS 2024) — NEW, modern open-source safety classifier, direct comparable to what A10 builds
 - OWASP Top 10 for LLM Applications 2025
 
-**Week 4 side quest — tooling (1-2 days each, hands-on)**
+**Week 4 side quest — tooling (1-2 days each, hands-on)** - [CAN'T]
 - [ACTIVITY] Garak (NVIDIA) — run against an open model, document findings
 - [ACTIVITY] PyRIT (Microsoft) — skim docs
 - [ACTIVITY] Inspect (UK AISI) — modern eval framework
-- [ACTIVITY] Run AgentDojo locally — direct portfolio talking point
+- [DONE] [ACTIVITY] Run AgentDojo locally — direct portfolio talking point
 
-**Optional / stretch (only if ahead of schedule)**
+**Optional / stretch (only if ahead of schedule)** [OPTIONAL]
 - Visual Adversarial Examples Jailbreak Aligned LLMs (Qi et al., 2024) — multimodal angle, JD mentions multimodal
 - Latent Adversarial Training (Sheshadri et al., 2024) — frontier defense technique
