@@ -1,4 +1,6 @@
 """
+To run this do: pip install agentdojo
+
 AgentDojo — GPT-4o vs Ground Truth Pipeline
 =============================================
 Runs the same task + injection attack through two pipelines and compares:
