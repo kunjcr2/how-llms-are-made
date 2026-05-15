@@ -16,8 +16,8 @@
 **Week 3 — Prompt injection** (A10's product surface)
 - [DONE] Not What You've Signed Up For (Greshake et al., 2023)
 - [DONE] AgentDojo (Debenedetti et al., NeurIPS 2024)
-- [DOING] Adaptive Attacks Break Defenses Against Indirect PI (Zhan et al., NAACL 2025)
-- Indirect Prompt Injections: Are Firewalls All You Need? (Shi et al., 2025)
+- [DONE] Adaptive Attacks Break Defenses Against Indirect PI (Zhan et al., NAACL 2025)
+- [DONE] Indirect Prompt Injections: Are Firewalls All You Need? (Shi et al., 2025)
 
 **Week 3.5 — Bias & toxicity** (NEW, JD explicitly mentions "bias detection")
 - RealToxicityPrompts (Gehman et al., 2020) — canonical toxicity eval

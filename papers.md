@@ -50,6 +50,9 @@
 - [AutoDAN-Turbo: A Lifelong Agent for Strategy Self-Exploration to Jailbreak LLMs](https://arxiv.org/abs/2410.05295) — Liu et al., ICLR 2025
 - [The Crescendo Multi-Turn LLM Jailbreak Attack](https://arxiv.org/abs/2404.01833) — Russinovich et al., Microsoft, 2024
 - [AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents](https://arxiv.org/abs/2406.13352) — 2024
+- [Adaptive Attacks Break Defenses Against Indirect PI](https://arxiv.org/abs/2503.00061) — Zhan et al., NAACL 2025
+- [Indirect Prompt Injections: Are Firewalls All You Need?](https://arxiv.org/abs/2510.05244) — Shi et al., 2025
+- [Defeating Prompt Injections by Design (CaMeL)](https://arxiv.org/abs/2503.18813) — Google DeepMind, 2025
 
 
 ---
