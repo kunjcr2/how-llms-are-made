@@ -53,6 +53,9 @@
 - [Adaptive Attacks Break Defenses Against Indirect PI](https://arxiv.org/abs/2503.00061) — Zhan et al., NAACL 2025
 - [Indirect Prompt Injections: Are Firewalls All You Need?](https://arxiv.org/abs/2510.05244) — Shi et al., 2025
 - [Defeating Prompt Injections by Design (CaMeL)](https://arxiv.org/abs/2503.18813) — Google DeepMind, 2025
+- [RealToxicityPrompts: Evaluating Neural Toxic Degeneration in Language Models](https://arxiv.org/abs/2009.11462) — Gehman et al., 2020
+- [BBQ: A Hand-Built Bias Benchmark for Question Answering](https://arxiv.org/abs/2110.08193) — Parrish et al., 2021
+- [DecodingTrust: A Comprehensive Assessment of Trustworthiness in GPT Models](https://arxiv.org/abs/2306.11698) — Wang et al., 2023
 
 
 ---
