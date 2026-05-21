@@ -20,8 +20,8 @@
 - [DONE] Indirect Prompt Injections: Are Firewalls All You Need? (Shi et al., 2025)
 
 **Week 3.5 — Bias & toxicity** (NEW, JD explicitly mentions "bias detection")
-- RealToxicityPrompts (Gehman et al., 2020) — canonical toxicity eval
-- BBQ: Bias Benchmark for QA (Parrish et al., 2022) — social bias eval, you'll likely use this
+- [DONE] RealToxicityPrompts (Gehman et al., 2020) — canonical toxicity eval
+- [DONE] BBQ: Bias Benchmark for QA (Parrish et al., 2022) — social bias eval, you'll likely use this
 - DecodingTrust (Wang et al., NeurIPS 2023) — comprehensive trustworthiness eval, A10 will probably reference this
 
 **Week 4 — Defenses, guardrails, evaluation frameworks** (THIS IS THE JOB)
