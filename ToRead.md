@@ -22,7 +22,7 @@
 **Week 3.5 — Bias & toxicity** (NEW, JD explicitly mentions "bias detection")
 - DONE RealToxicityPrompts (Gehman et al., 2020) — canonical toxicity eval
 - DONE BBQ: Bias Benchmark for QA (Parrish et al., 2022) — social bias eval, you'll likely use this
-- DOING DecodingTrust (Wang et al., NeurIPS 2023) — comprehensive trustworthiness eval, A10 will probably reference this
+- SKIPPED DecodingTrust (Wang et al., NeurIPS 2023) — comprehensive trustworthiness eval, A10 will probably reference this
 
 **Week 4 — Defenses, guardrails, evaluation frameworks** (THIS IS THE JOB)
 - Llama Guard 2 / Llama Guard 3 technical reports
