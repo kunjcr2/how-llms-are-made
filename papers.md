@@ -57,6 +57,7 @@
 - [BBQ: A Hand-Built Bias Benchmark for Question Answering](https://arxiv.org/abs/2110.08193) — Parrish et al., 2021
 - (110 pages long) [DecodingTrust: A Comprehensive Assessment of Trustworthiness in GPT Models](https://arxiv.org/abs/2306.11698) — Wang et al., 2023
 - [Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations](https://arxiv.org/abs/2312.06674) (Llama Guard 2 / Llama Guard 3 Technical Reports) — Inan et al., 2023
+- [HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal](https://arxiv.org/abs/2402.04249) — Mazeika et al., 2024
 
 
 ---

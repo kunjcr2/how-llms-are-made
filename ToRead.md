@@ -25,7 +25,7 @@
 - SKIPPED DecodingTrust (Wang et al., NeurIPS 2023) — comprehensive trustworthiness eval, A10 will probably reference this
 
 **Week 4 — Defenses, guardrails, evaluation frameworks** (THIS IS THE JOB)
-- Llama Guard 2 / Llama Guard 3 technical reports
+- DONE Llama Guard 2 / Llama Guard 3 technical reports
 - HarmBench (Mazeika et al., 2024)
 - StrongREJECT (Souly et al., NeurIPS 2024)
 - WildGuard (Han et al., NeurIPS 2024) — NEW, modern open-source safety classifier, direct comparable to what A10 builds
