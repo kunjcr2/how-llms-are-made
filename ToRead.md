@@ -29,7 +29,7 @@
 - HarmBench (Mazeika et al., 2024)
 - StrongREJECT (Souly et al., NeurIPS 2024)
 - WildGuard (Han et al., NeurIPS 2024) — NEW, modern open-source safety classifier, direct comparable to what A10 builds
-- OWASP Top 10 for LLM Applications 2025
+- SKIPPED OWASP Top 10 for LLM Applications 2025
 
 **Week 4 side quest — tooling (1-2 days each, hands-on)** - CAN'T
 - ACTIVITY Garak (NVIDIA) — run against an open model, document findings

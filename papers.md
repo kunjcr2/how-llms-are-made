@@ -58,6 +58,8 @@
 - (110 pages long) [DecodingTrust: A Comprehensive Assessment of Trustworthiness in GPT Models](https://arxiv.org/abs/2306.11698) — Wang et al., 2023
 - [Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations](https://arxiv.org/abs/2312.06674) (Llama Guard 2 / Llama Guard 3 Technical Reports) — Inan et al., 2023
 - [HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal](https://arxiv.org/abs/2402.04249) — Mazeika et al., 2024
+- [A StrongREJECT for Empty Jailbreaks](https://arxiv.org/abs/2402.10260) — Souly et al., NeurIPS 2024
+- [WildGuard: Open One-stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs](https://arxiv.org/abs/2406.18495) — Han et al., NeurIPS 2024
 
 
 ---
