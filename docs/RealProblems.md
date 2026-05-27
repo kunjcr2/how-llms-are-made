@@ -194,3 +194,7 @@ where $A \in \mathbb{R}^{d \times r}$ and $B \in \mathbb{R}^{r \times d}$ and $r
 
 ### 35. What is decoding throughput?
 - how many tokens we can generate per second in a given model.
+
+### 36. How are Adam and AdamW different?
+- Both are optimizers, but they handle weight decay (a regularization trick that shrinks weights toward zero each step to prevent overfitting) differently. 
+- In Adam, weight decay is baked into the gradient as L2 regularization, so it passes through Adam's adaptive scaling (the m and v accumulators) — meaning some parameters get too much decay and others too little depending on their gradient history. AdamW fixes this by "decoupling" the decay: the gradient update goes through Adam as normal, and then weight decay is applied separately as a flat θ = θ - λ·θ step. Every parameter loses the same proportion of its value, regardless of gradient magnitude. This is why AdamW generalizes better and is the default in most LLM training pipelines (including HuggingFace's Trainer).
