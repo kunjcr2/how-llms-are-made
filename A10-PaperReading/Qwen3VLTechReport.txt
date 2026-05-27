@@ -1,0 +1,90 @@
+--- Qwen 3 VL Technical Report ---
+
+-- Abs
+- Context upto 256k
+- 4 dense, 2 moe
+- 3 updates to architecture
+    1. Enhanced interleaved MRoPE for stronger sptial-temporal modelling across image and video. (MRoPE means, images and videos have different ways of representing the position. Text has 1D rotations, image would have 2d and video would have 3d rotations. Interleaved means, they mix both of the 1D and 2D/3D representations in 1 sequence.)
+        - Instead of 1D rope with 1/3rd to t, 1/3rd to w and 1/3rd to h dimension for images and videos, it now uses t, w, h, t, w, h, t, w, h and so on throughout the embedding dimension such that low and high frequeency rotations are given to all three t, w, h equally instead of just having high frequency to t, mid to w and low to h. This helps the model to better understand the spatial and temporal relationships in the image and video. 
+    2. DeepStack integration, which effectively leverages multi-level ViT features to tighten vision–language alignment. (DeepStack means, instead of using the only last layer of the output from ViT, it combines output from intermediate layers and send it to the language model. This leads to finer understanding of the image.)
+        - So ViT has 24 layers, out of which it takes 1 output till now which is from the 24th layer. Now they take 5 for example, from 1, 6, 12, 18 and 24th layer through a residual connection and use it as an output.
+    3. text-based time alignment for video, evolving from T-RoPE to explicit textual timestamp alignment for more precise temporal grounding. (T-RoPE means, this is nothing but adding the time dimension with RoPE. frame1 is pos1, frame2 is pos2.. Now they use Textual TimeStamp alignment. Means, each frame is associated with a timestamp, and the timestamp is encoded into the input sequence in TEXT format.)
+        - So, T-rope was used for this purpose earlier, but it had limitations with timestamps. So they came up with textual timestamp alignment, where they provided time stamps with text and the patches to the LM such that now LM can directly just see and say this happened at this time.
+
+- Used square root sampling - instead of sampling based on the size of dataset - sampled based on the square root of the size of dataset leading to better sampling.
+- Made data better - enhanced captoion supervision, omni recognition (look at A LOTS of sybols, instead of a few) and ocr coverage, 3D/sptaial reasoning and new corpus for code, long docs. chain-ofthought reasoning and high-quality, diverse GUI-agent interaction data to bridge perception, reasoning, and action.
+
+-- pretraining and Posttraining. 
+    - Pretraining in 4 stages:
+        1. Warmpup alignment phase that updates only the merger of vision and language keeping rest of the model frozen
+            - Starting with a Pretrained language model and a pretrained Vision encoder. And a merger (Projection layer) is being trained.
+        2. Full parameter training with more and more context 8k, 32k and 256k.
+            - Now unfreezing everything and training it further for more and more and more context in token space. Initially using 8k, 32k and then finally 256k.
+    - Posttrainng 2 stages:
+        1. Supervised finetuning on long CoT
+        2. RLHF
+
+-- architecture
+- 3 module architecture:
+    1. Vision encoder
+        - SIgLIP-2 architecture by google. CLIP style training with no everything-to-everything comparison.
+        - Continued training with dynamic input size. Initialized from official SigLIP-2 model weights and used 2D RoPE. Interpolated Positional Embeddings based on input size, following CoMP (Which is nothing but converting an input of 14x14 and feeling up entries with smooth values in between to make it for 22x22.)
+    2. MLP based vison language merger
+    3. LLM (3 dense, 2 moe)
+        - Uses Qwen model's 5 variants
+- Interleaved MRoPE
+    - Before embedding dimensions are partitioned into temporal, horizontal and vertical dimensions, each with distinct rotation frequency bands. It was imbalanced. 
+    - So to solve that problem they interleaved them: t, h, v, t, h, v, ... such that low and high frequency roatation are given to all the three dimensions equally.
+- DeepStack
+    - Nothing but instead of using just the last layer of the ViT - we use intermediate outputs too for VLM task. This passes on what the model learnt in earlier layers like colors or edges and stuff.
+- Video Timestamp Alignment
+    - Before we used sort of a 3D rope but it was not that good for long videos since for longer videos it gets really hard to look at longer contexts since high frequency can make some issues. 
+    - Instead now they provide timestamps in the text tokens itself. Like "[0.3s] [frame_1]", "[0.6s] [frame_2]" etc. such that the model can use that timestamp to align the image and video directly.
+
+-- Pretraining
+- 4 stages:
+    1. Vision-Language Alignment (67B tokens, seq len 8k)
+        - Only the MLP merger is trained. Vision encoder and LLM are frozen.
+        - Data: image-caption pairs, visual knowledge, OCR data.
+            - Use another Qwen Model, Qwen2.5VL to generate caption for the images in a better way. Also deduplication is performed on a large scale.
+        - Goal: just teach the merger to bridge vision and language spaces.
+
+    2. Multimodal Pre-Training (~1T tokens, seq len 8k)
+        - Everything unfrozen. Full end-to-end training.
+        - Data: interleaved image-text, visual grounding, VQA, STEM, small amount of video + text-only data mixed in to not forget language.
+            - In interleaved image-text data, a qwen scoreer is used to filter out bad pairs as well as domain classification is done. 
+        - Goal: learn multimodal reasoning basics.
+
+    3. Long-Context Pre-Training (~1T tokens, seq len 32k)
+        - Everything still unfrozen. Sequence length 4x'd to 32k.
+        - Data: more text-only for long-form comprehension, significantly more video and agent instruction-following data.
+            - For book-scale level interleaved dataset, they use a Qwen2.5-VL to perform a high accuracy multimodal parsing and aligning text with the embedded figures/equations.
+        - Goal: stretch the model to handle longer inputs and longer videos.
+
+    4. Ultra-Long-Context Adaptation (100B tokens, seq len 256k)
+        - Much smaller dataset, very focused.
+        - Data: long-video and long-document heavy.
+            - They used long books and long text corpora and kept on adding it until they reached 256k token limit. Removed more text area, and preserved image-to-text ratio.
+        - Goal: push context window to 256k. Final adaptation only.
+
+- OCR: 30M inhouse collected samples using some proper pipeline. They used OCR specialized model to relabel those.
+- Document Parsing: 3M PDFs from common crawl. In house layout model makes boundaries for the text and images and then sends it to the Qwen2.5-VL to parse it. Position aware and layout aligned. Same done to large scale HTML and Markdown data as well.
+- Long document understanding: By using Multiple images and long HTML and Markdown and bunch of texts, they created a VQA dataset. Model would require to reason for longer time.
+- Box-based Grounding - Used COCO, Objects365, OpenImages, RefCOCO. Additionally created a pipeline to craete images with bounding boxe using Qwen2.5-VL. 
+- Pointing based grounding dataset - PixMo. Grounding data from public object detection and instance segmentation benchmarks and high precision pointing annotations generated by a dedicated synthesis pipeline.
+- Spatial Understanding - constrcuted specialized one with 3 types: relational annotation ("Cup to the left of laptop"), affordance labels ("sittable", "holdable"), action-conditioned queries ("What should I move first to reach X"). Data from real world scenes and synthetic layouts. Queries via LLM. All spatial are relative to other objects, not absolute coordinates.
+- 3D grouding - each sample with Single view image. +refferring expression + 9 DoF 3D bounding box in JSON. Unified into a virtual camera coordinate system following Omni3D. Synthesized rich 3D affordance data from existing 3D object datasets using LLMs.
+- Code - Reused from Qwen3 and Qwen3-Coder. For multimodal, Used open source dataset. used UI Screenshots, HTML/CSS Screenshots, SVG Code, visual problems, stackoverflow questions with images, flowchart diagram; etc.
+- Video - 2 main innovations:
+    1. Dense caption synthesis - short-to-long strategy to generate timestamp interleaved story level descriptions ith event level and segment level details.
+    2. Spatio-temporal groudning - large-scale annotations at object, action and person level. Data balanced across instructional, cinematic; etc sources using metadatas like title, duration and category. Length adaptive sampling. Max frames per stage to avoid sparse and low res frame issues.
+- STEM: Divide and conqure approach. visual perception: synthetic pipeline generates 1M point-grounding samples and 2M VQA pairs from programmatic geometric diagrams. 2 stage caption produce 6M diagram captions across STEM domains. Multimodal reasoning: 60M + K-12 and undergrad exercise cleaned, reformulated, translated between Chinese and English
+
+----- Mostly nothing down here
+- SFT Data (Cold Start): 1.2M samples, 1/3 text-only and 2/3 image-text and video-text pairs. Covers 8 core domains expanded from Qwen2.5-VL with new capabilities like spatial reasoning, 3D grounding, long-document understanding, and agentic tool use. Two-phase filtering: Query Filtering (using Qwen2.5-VL to remove ambiguous/irrelevant queries) and Response Filtering (rule-based heuristics + Qwen2.5-VL reward model scoring for correctness, completeness, and visual grounding accuracy). Trained in two stages: 32K context first, then 256K.
+- Long-CoT Cold Start Data: Dataset of hard reasoning problems — 1:1 ratio of vision-language to text-only samples. Multimodal side focuses on STEM and agentic tasks; text side mirrors Qwen3 with math, code, and logic. Three-stage filtering: keep only hard problems (low pass rate), discard VL math problems solvable without the image, and remove low-quality responses with repetition, language mixing, or guessing.
+- Strong-to-Weak Distillation: Teacher model outputs used to train smaller student models in two phases — off-policy (teacher responses directly used) then on-policy (student generates its own responses, aligned to teacher via KL divergence).
+- Reasoning RL: Trained on math, code, logic, visual grounding, and visual puzzles — all verifiable by rules or code. ~30K RL queries after filtering; 16 responses sampled per query, easy ones (>90% pass rate) dropped. Reward system is per-task with a language-switching penalty. Uses SAPO algorithm.
+- General RL: Multi-task RL covering VQA, OCR, captioning, grounding, document parsing. Two reward dimensions: instruction following (format, length, constraints) and preference alignment (helpfulness, accuracy, style). Also introduces specialized tasks to correct wrong priors baked in during SFT (e.g. counter-intuitive counting, tricky clock reading). Hybrid reward: rule-based for verifiable tasks, Qwen2.5-VL-72B or Qwen3 as judge for open-ended tasks.
+- Thinking with Images: Two-stage agentic training. Stage 1: SFT on 10K grounding examples to teach think→act→analyze→answer loop, then multi-turn tool-integrated RL on Qwen2.5-VL-32B. Stage 2: distill that agent to generate 120K diverse interactions, then apply the same SFT+RL pipeline to Qwen3-VL. Three RL rewards: answer accuracy, multi-turn reasoning quality, and tool-call count aligned to task complexity.
+Infrastructure: Trained on Alibaba Cloud PAI-Lingjun with up to 10,000 GPUs using MegatronLM with TP, PP, CP, EP, and ZeRO-1 DP. Inference via vLLM (PagedAttention for memory efficiency) or SGLang (structured generation and complex prompts).
