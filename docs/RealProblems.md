@@ -188,6 +188,9 @@ where $A \in \mathbb{R}^{d \times r}$ and $B \in \mathbb{R}^{r \times d}$ and $r
 ### 33. What is Krippendorff's α?
 - It just shows how good the correlation is between 2 annotators or more than that for the data labeling tasks.
 
-### 3. What are RACE and ARC style texts?
+### 34. What are RACE and ARC style texts?
 - RACE = ReAding Comprehension from Examinations. It is a multi-choice reading comprehension dataset.
 - ARC = AI2 Reasoning Challenge. It is a dataset of science questions that require reasoning.
+
+### 35. What is decoding throughput?
+- how many tokens we can generate per second in a given model.
