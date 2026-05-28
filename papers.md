@@ -10,6 +10,7 @@
 - [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385) — He et al., 2016
 - [An Image is Worth 16x16 Words: Vision Transformers (ViT)](https://arxiv.org/abs/2010.11929) — Dosovitskiy et al., 2020
 - [Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture](https://arxiv.org/pdf/2301.08243) — LeCun et al., 2023
+- [Qwen3-VL paper](https://arxiv.org/pdf/2511.21631) — Qwen Team, 2025
 
 ---
 
