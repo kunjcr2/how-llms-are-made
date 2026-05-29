@@ -18,20 +18,21 @@ from typing import Optional, Dict, List, Tuple
 # axis gets equal share of low and high frequency rotation bands.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class InterleavedMRoPE(nn.Module):
     def __init__(self, head_dim: int, theta: float = 10000.0):
         super().__init__()
         self.head_dim = head_dim
         assert head_dim % 2 == 0
         num_pairs = head_dim // 2
-        self.axis_assignment = [['t', 'h', 'v'][i % 3] for i in range(num_pairs)]
+        self.axis_assignment = [["t", "h", "v"][i % 3] for i in range(num_pairs)]
         freqs = 1.0 / (theta ** (torch.arange(0, num_pairs).float() / num_pairs))
-        self.register_buffer('base_freqs', freqs)
+        self.register_buffer("base_freqs", freqs)
 
     def compute_freqs(self, position_ids: Dict[str, torch.Tensor]) -> torch.Tensor:
-        B, N = position_ids['t'].shape
+        B, N = position_ids["t"].shape
         num_pairs = len(self.axis_assignment)
-        angles = torch.zeros(B, N, num_pairs, device=position_ids['t'].device)
+        angles = torch.zeros(B, N, num_pairs, device=position_ids["t"].device)
         for i, axis in enumerate(self.axis_assignment):
             angles[:, :, i] = position_ids[axis].float() * self.base_freqs[i]
         return torch.polar(torch.ones_like(angles), angles)
@@ -48,6 +49,7 @@ class InterleavedMRoPE(nn.Module):
 # Faster than LayerNorm, same performance. Used before every sub-layer.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class RMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -55,7 +57,7 @@ class RMSNorm(nn.Module):
         self.gamma = nn.Parameter(torch.ones(dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        rms = torch.sqrt(torch.mean(x ** 2, dim=-1, keepdim=True) + self.eps)
+        rms = torch.sqrt(torch.mean(x**2, dim=-1, keepdim=True) + self.eps)
         return self.gamma * (x / rms)
 
 
@@ -65,12 +67,13 @@ class RMSNorm(nn.Module):
 # Used inside each MoE expert.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class SwiGLU_MLP(nn.Module):
     def __init__(self, hidden_dim: int, intermediate_dim: Optional[int] = None):
         super().__init__()
         self.intermediate_dim = intermediate_dim or int(hidden_dim * 8 / 3)
         self.W_gate = nn.Linear(hidden_dim, self.intermediate_dim, bias=False)
-        self.W_up   = nn.Linear(hidden_dim, self.intermediate_dim, bias=False)
+        self.W_up = nn.Linear(hidden_dim, self.intermediate_dim, bias=False)
         self.W_down = nn.Linear(self.intermediate_dim, hidden_dim, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -83,13 +86,18 @@ class SwiGLU_MLP(nn.Module):
 # hidden space as text tokens. No separate encoder needed.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class PatchEmbedding(nn.Module):
-    def __init__(self, patch_size: int = 16, in_channels: int = 3, hidden_dim: int = 7168):
+    def __init__(
+        self, patch_size: int = 16, in_channels: int = 3, hidden_dim: int = 7168
+    ):
         super().__init__()
-        self.proj = nn.Conv2d(in_channels, hidden_dim, kernel_size=patch_size, stride=patch_size)
+        self.proj = nn.Conv2d(
+            in_channels, hidden_dim, kernel_size=patch_size, stride=patch_size
+        )
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
-        x = self.proj(image)               # (B, hidden_dim, H/P, W/P)
+        x = self.proj(image)  # (B, hidden_dim, H/P, W/P)
         return x.flatten(2).transpose(1, 2)  # (B, num_patches, hidden_dim)
 
 
@@ -99,19 +107,22 @@ class PatchEmbedding(nn.Module):
 # the old state to keep vs replace per step. Cheap but lossy for long-range.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class GatedDeltaNet(nn.Module):
     def __init__(self, hidden_dim: int, num_heads: int, head_dim: int):
         super().__init__()
         self.hidden_dim = hidden_dim
-        self.num_heads  = num_heads
-        self.head_dim   = head_dim
-        self.W_q    = nn.Linear(hidden_dim, num_heads * head_dim, bias=False)
-        self.W_k    = nn.Linear(hidden_dim, num_heads * head_dim, bias=False)
-        self.W_v    = nn.Linear(hidden_dim, num_heads * head_dim, bias=False)
+        self.num_heads = num_heads
+        self.head_dim = head_dim
+        self.W_q = nn.Linear(hidden_dim, num_heads * head_dim, bias=False)
+        self.W_k = nn.Linear(hidden_dim, num_heads * head_dim, bias=False)
+        self.W_v = nn.Linear(hidden_dim, num_heads * head_dim, bias=False)
         self.W_gate = nn.Linear(hidden_dim, num_heads * head_dim, bias=True)
-        self.W_o    = nn.Linear(num_heads * head_dim, hidden_dim, bias=False)
+        self.W_o = nn.Linear(num_heads * head_dim, hidden_dim, bias=False)
 
-    def forward(self, x: torch.Tensor, position_ids: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, position_ids: Dict[str, torch.Tensor]
+    ) -> torch.Tensor:
         B, N, C = x.shape
         H, D = self.num_heads, self.head_dim
 
@@ -130,17 +141,20 @@ class GatedDeltaNet(nn.Module):
         state = torch.zeros(B, H, D, D, device=x.device, dtype=x.dtype)
         outputs = []
 
+        # Q, K, V, G, S -> (B, N, H, D)
         for t in range(N):
-            q_t = Q[:, t]                                        # (B, H, D)
-            k_t = K[:, t]                                        # (B, H, D)
-            v_t = V[:, t]                                        # (B, H, D)
-            g_t = G[:, t].unsqueeze(-1)                          # (B, H, D, 1)
+            q_t = Q[:, t]  # (B, H, D)
+            k_t = K[:, t]  # (B, H, D)
+            v_t = V[:, t]  # (B, H, D)
+            g_t = G[:, t].unsqueeze(-1)  # (B, H, D, 1)
 
-            pred  = torch.einsum('bhk,bhkv->bhv', k_t, state)   # delta rule: what state predicts
-            delta = torch.einsum('bhk,bhv->bhkv', k_t, v_t - pred)
-            state = g_t * state + delta                          # gated update
+            pred = torch.einsum(
+                "bhk,bhkv->bhv", k_t, state
+            )  # delta rule: what state predicts
+            delta = torch.einsum("bhk,bhv->bhkv", k_t, v_t - pred)
+            state = g_t * state + delta  # gated update
 
-            out_t = torch.einsum('bhk,bhkv->bhv', q_t, state)   # read from state
+            out_t = torch.einsum("bhk,bhkv->bhv", q_t, state)  # read from state
             outputs.append(out_t)
 
         out = torch.stack(outputs, dim=1).reshape(B, N, H * D)
@@ -154,20 +168,23 @@ class GatedDeltaNet(nn.Module):
 # for precise long-range recall that GDN's state compression misses.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class GatedFullAttention(nn.Module):
     def __init__(self, hidden_dim: int, num_heads: int):
         super().__init__()
         self.num_heads = num_heads
-        self.head_dim  = hidden_dim // num_heads
-        self.scale     = self.head_dim ** -0.5
-        self.W_q    = nn.Linear(hidden_dim, hidden_dim, bias=True)
-        self.W_k    = nn.Linear(hidden_dim, hidden_dim, bias=True)
-        self.W_v    = nn.Linear(hidden_dim, hidden_dim, bias=True)
-        self.W_o    = nn.Linear(hidden_dim, hidden_dim, bias=False)
+        self.head_dim = hidden_dim // num_heads
+        self.scale = self.head_dim**-0.5
+        self.W_q = nn.Linear(hidden_dim, hidden_dim, bias=True)
+        self.W_k = nn.Linear(hidden_dim, hidden_dim, bias=True)
+        self.W_v = nn.Linear(hidden_dim, hidden_dim, bias=True)
+        self.W_o = nn.Linear(hidden_dim, hidden_dim, bias=False)
         self.W_gate = nn.Linear(hidden_dim, hidden_dim, bias=True)
-        self.mrope  = InterleavedMRoPE(self.head_dim)
+        self.mrope = InterleavedMRoPE(self.head_dim)
 
-    def forward(self, x: torch.Tensor, position_ids: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, position_ids: Dict[str, torch.Tensor]
+    ) -> torch.Tensor:
         B, N, C = x.shape
         Q = self.W_q(x).view(B, N, self.num_heads, self.head_dim).transpose(1, 2)
         K = self.W_k(x).view(B, N, self.num_heads, self.head_dim).transpose(1, 2)
@@ -183,9 +200,9 @@ class GatedFullAttention(nn.Module):
         K = self.mrope.apply(K, freqs)
 
         scores = (Q @ K.transpose(-2, -1)) * self.scale
-        attn   = F.softmax(scores, dim=-1)
-        out    = (attn @ V).transpose(1, 2).reshape(B, N, C)
-        out    = self.W_o(out)
+        attn = F.softmax(scores, dim=-1)
+        out = (attn @ V).transpose(1, 2).reshape(B, N, C)
+        out = self.W_o(out)
 
         gate = torch.sigmoid(self.W_gate(x))
         return gate * out
@@ -197,15 +214,25 @@ class GatedFullAttention(nn.Module):
 # Every layer uses MoE (not just some layers).
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class MoELayer(nn.Module):
-    def __init__(self, hidden_dim: int, num_experts: int = 512,
-                 top_k: int = 10, num_shared_experts: int = 1):
+    def __init__(
+        self,
+        hidden_dim: int,
+        num_experts: int = 512,
+        top_k: int = 10,
+        num_shared_experts: int = 1,
+    ):
         super().__init__()
         self.num_experts = num_experts
-        self.top_k       = top_k
-        self.router      = nn.Linear(hidden_dim, num_experts, bias=False)
-        self.experts     = nn.ModuleList([SwiGLU_MLP(hidden_dim) for _ in range(num_experts)])
-        self.shared      = nn.ModuleList([SwiGLU_MLP(hidden_dim) for _ in range(num_shared_experts)])
+        self.top_k = top_k
+        self.router = nn.Linear(hidden_dim, num_experts, bias=False)
+        self.experts = nn.ModuleList(
+            [SwiGLU_MLP(hidden_dim) for _ in range(num_experts)]
+        )
+        self.shared = nn.ModuleList(
+            [SwiGLU_MLP(hidden_dim) for _ in range(num_shared_experts)]
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, N, C = x.shape
@@ -217,9 +244,11 @@ class MoELayer(nn.Module):
         routed_out = torch.zeros_like(x_flat)
         for k in range(self.top_k):
             for e in range(self.num_experts):
-                mask = (topk_indices[:, k] == e)
+                mask = topk_indices[:, k] == e
                 if mask.any():
-                    routed_out[mask] += topk_weights[mask, k:k+1] * self.experts[e](x_flat[mask])
+                    routed_out[mask] += topk_weights[mask, k : k + 1] * self.experts[e](
+                        x_flat[mask]
+                    )
 
         shared_out = sum(s(x_flat) for s in self.shared)
         return (routed_out + shared_out).view(B, N, C)
@@ -231,21 +260,33 @@ class MoELayer(nn.Module):
 # All layers use MoE FFN.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class HybridTransformerBlock(nn.Module):
-    def __init__(self, hidden_dim: int, num_heads: int, layer_idx: int,
-                 full_attn_every_n: int = 5, num_experts: int = 512,
-                 top_k: int = 10, num_shared_experts: int = 1):
+    def __init__(
+        self,
+        hidden_dim: int,
+        num_heads: int,
+        layer_idx: int,
+        full_attn_every_n: int = 5,
+        num_experts: int = 512,
+        top_k: int = 10,
+        num_shared_experts: int = 1,
+    ):
         super().__init__()
         self.norm_1 = RMSNorm(hidden_dim)
         self.norm_2 = RMSNorm(hidden_dim)
         head_dim = hidden_dim // num_heads
-        use_full_attn = ((layer_idx + 1) % full_attn_every_n == 0)
-        self.attn = (GatedFullAttention(hidden_dim, num_heads)
-                     if use_full_attn
-                     else GatedDeltaNet(hidden_dim, num_heads, head_dim))
+        use_full_attn = (layer_idx + 1) % full_attn_every_n == 0
+        self.attn = (
+            GatedFullAttention(hidden_dim, num_heads)
+            if use_full_attn
+            else GatedDeltaNet(hidden_dim, num_heads, head_dim)
+        )
         self.ffn = MoELayer(hidden_dim, num_experts, top_k, num_shared_experts)
 
-    def forward(self, x: torch.Tensor, position_ids: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, position_ids: Dict[str, torch.Tensor]
+    ) -> torch.Tensor:
         x = x + self.attn(self.norm_1(x), position_ids)
         x = x + self.ffn(self.norm_2(x))
         return x
@@ -257,13 +298,18 @@ class HybridTransformerBlock(nn.Module):
 # Enables speculative decoding at inference for faster generation.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class MultiTokenPredictionHead(nn.Module):
-    def __init__(self, hidden_dim: int, vocab_size: int = 248320, num_future_tokens: int = 4):
+    def __init__(
+        self, hidden_dim: int, vocab_size: int = 248320, num_future_tokens: int = 4
+    ):
         super().__init__()
-        self.heads = nn.ModuleList([
-            nn.Linear(hidden_dim, vocab_size, bias=False)
-            for _ in range(num_future_tokens)
-        ])
+        self.heads = nn.ModuleList(
+            [
+                nn.Linear(hidden_dim, vocab_size, bias=False)
+                for _ in range(num_future_tokens)
+            ]
+        )
 
     def forward(self, hidden_states: torch.Tensor) -> List[torch.Tensor]:
         return [head(hidden_states) for head in self.heads]
@@ -275,27 +321,43 @@ class MultiTokenPredictionHead(nn.Module):
 # Hybrid GDN + GatedAttention layers, every layer MoE, multi-token prediction.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class Qwen35(nn.Module):
-    def __init__(self, hidden_dim: int = 7168, vocab_size: int = 248320,
-                 num_layers: int = 60, num_heads: int = 56,
-                 num_experts: int = 512, top_k: int = 10,
-                 num_shared_experts: int = 1):
+    def __init__(
+        self,
+        hidden_dim: int = 7168,
+        vocab_size: int = 248320,
+        num_layers: int = 60,
+        num_heads: int = 56,
+        num_experts: int = 512,
+        top_k: int = 10,
+        num_shared_experts: int = 1,
+    ):
         super().__init__()
         self.patch_embed = PatchEmbedding(patch_size=16, hidden_dim=hidden_dim)
         self.token_embed = nn.Embedding(vocab_size, hidden_dim)
-        self.layers = nn.ModuleList([
-            HybridTransformerBlock(
-                hidden_dim=hidden_dim, num_heads=num_heads, layer_idx=i,
-                full_attn_every_n=5, num_experts=num_experts,
-                top_k=top_k, num_shared_experts=num_shared_experts,
-            )
-            for i in range(num_layers)
-        ])
-        self.norm    = RMSNorm(hidden_dim)
-        self.lm_head = MultiTokenPredictionHead(hidden_dim, vocab_size, num_future_tokens=4)
+        self.layers = nn.ModuleList(
+            [
+                HybridTransformerBlock(
+                    hidden_dim=hidden_dim,
+                    num_heads=num_heads,
+                    layer_idx=i,
+                    full_attn_every_n=5,
+                    num_experts=num_experts,
+                    top_k=top_k,
+                    num_shared_experts=num_shared_experts,
+                )
+                for i in range(num_layers)
+            ]
+        )
+        self.norm = RMSNorm(hidden_dim)
+        self.lm_head = MultiTokenPredictionHead(
+            hidden_dim, vocab_size, num_future_tokens=4
+        )
 
-    def forward(self, text_tokens: torch.Tensor,
-                images: Optional[torch.Tensor] = None) -> List[torch.Tensor]:
+    def forward(
+        self, text_tokens: torch.Tensor, images: Optional[torch.Tensor] = None
+    ) -> List[torch.Tensor]:
         B = text_tokens.shape[0]
         x = self.token_embed(text_tokens)
 
@@ -315,17 +377,17 @@ class Qwen35(nn.Module):
 
 
 MODEL_SPECS = {
-    "total_params":     "397B",
-    "active_params":    "17B (4.28%)",
-    "num_experts":      512,
-    "active_experts":   "10 routed + 1 shared = 11",
-    "num_layers":       60,
-    "hidden_dim":       7168,
-    "vocab_size":       248320,
-    "context":          "256K (extensible to 1M)",
-    "languages":        201,
-    "attention":        "Hybrid GatedDeltaNet + GatedFullAttention",
-    "training":         "Early fusion from scratch on interleaved multimodal tokens",
-    "precision":        "FP8",
+    "total_params": "397B",
+    "active_params": "17B (4.28%)",
+    "num_experts": 512,
+    "active_experts": "10 routed + 1 shared = 11",
+    "num_layers": 60,
+    "hidden_dim": 7168,
+    "vocab_size": 248320,
+    "context": "256K (extensible to 1M)",
+    "languages": 201,
+    "attention": "Hybrid GatedDeltaNet + GatedFullAttention",
+    "training": "Early fusion from scratch on interleaved multimodal tokens",
+    "precision": "FP8",
     "multi_token_pred": 4,
 }
