@@ -1,0 +1,5 @@
+BeaverTails-V
+
+- First Multimodal Alignment framework.
+- BeaverTails-V, the first open-source dataset featuring dual preference annotations for helpfulness and safety, supplemented with multi-level safety labels.
+- Beaver-Guard-V, a multi-level guardrail system to proactively defend against unsafe queries and adversarial attacks.
