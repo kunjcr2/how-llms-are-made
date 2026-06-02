@@ -150,3 +150,62 @@ SPA-VL
 - Core insight for the field: you need response diversity (12 models, not just safe ones), question diversity (3 types), and scale (90K pairs) to build an effective safety preference dataset. The visual pathway is unaligned (same vulnerability as MM-SafetyBench, Hades, SIUO), and SPA-VL partially fixes it by unfreezing the projector during RLHF training.
 
 -- Good hardwork. Not a benchmark, rather a dataset, and have worked a lot.
+
+VLGuard
+
+- First vision-language safety fine-tuning dataset for VLLMs. Tiny by design: 2,000 images, ~3,000 instruction-response pairs. Can be mixed into training (0.3% of LLaVA's data) or used for post-hoc fine-tuning (<1 hour on 2 A100s).
+- 4 diagnostic findings about why VLLMs are unsafe:
+    - Finding 1: VLLM fine-tuning causes the LLM to forget its safety alignment. Tested on text-only inputs with no image. Vicuna-7B vanilla ASR 3.28%, LLaVA-7B (built on Vicuna) 6.45%. Suffix injection: 69.4% to 78.3%. MiniGPT-v2 worst: Llama2-Chat 0% to 19%.
+    - Finding 2: Training data contains harmful content. Llama-Guard flagged 247 unsafe samples in LLaVA's data — sexual content, derogatory comments, jailbreak prompts. LLM-generated datasets (ShareGPT, LLaVA-Instruct) inherited harmful content from the LLMs that created them.
+    - Finding 3: LoRA is MORE dangerous than full fine-tuning. Counterintuitive. LoRA learns efficiently from small data, so it more easily internalizes harmful samples and overwrites safety alignment. Higher ASR across the board despite comparable helpfulness.
+    - Finding 4: Removing unsafe training data only partially restores safety. "Clean" LLaVA still less safe than base Vicuna. Fine-tuning itself causes catastrophic forgetting of alignment, not just the harmful data. Explicit safety fine-tuning is needed.
+- Dataset construction:
+    - 977 harmful images + 1,023 safe images for training. 1,000 for test.
+    - Safe images: generate both a safe and unsafe instruction-response pair (teaches model to distinguish).
+    - Unsafe images: generate one pair explaining why the image is harmful.
+    - 4 categories: Privacy, Risky Behavior, Deception, Hateful Speech. 9 subcategories.
+    - All generated via GPT-4V.
+    - Test set split: Safe-Safe (helpfulness), Safe-Unsafe (text-side safety), Unsafe (vision-side safety).
+- Two fine-tuning strategies:
+    - Post-hoc: fine-tune pretrained VLLM on VLGuard + 5,000 helpfulness samples. Plug-and-play for deployed models.
+    - Mixed: append VLGuard to original training data. 0.3% of LLaVA stage 2, 0.1% of MiniGPT-v2 stage 3. Negligible overhead.
+- Key results (LLaVA-v1.5-7B post-hoc):
+    - AdvBench vanilla: 6.45% to 0%. Suffix: 78.3% to 13.1%.
+    - FigStep (typography jailbreak): 90.4% to 0%.
+    - VLGuard Safe-Unsafe: 87.5% to 0.9%. Unsafe: 72.6% to 0.23%.
+    - Helpfulness maintained or slightly improved.
+- 4 ablation findings:
+    - Safety data alone causes exaggerated safety (XSTest Safe drops from 91% to 42%). Adding 5,000 helpfulness samples fixes it. Source flexible — even text-only Alpaca works.
+    - Generalizes to unseen harm categories. Trained without privacy data, still 0% ASR on privacy content.
+    - Text-only safety data (Safety LLaMA) fixes text attacks but not vision-language attacks. FigStep stays at 87%. Multimodal safety data is required.
+    - Even 100 safety samples help. 2,000 is sufficient for strong performance across all attack types.
+- Comparison to SPA-VL: VLGuard is ~30x smaller (3K vs 100K) but achieves comparable results via SFT instead of RLHF. SPA-VL is more robust on adversarial suffixes (0% vs 13%) and doesn't need the helpfulness data workaround. VLGuard's diagnostic findings (why VLLMs are unsafe) are arguably the stronger contribution.
+- Bottom line: the vision-language fine-tuning process breaks safety alignment through two mechanisms: (1) harmful data in training sets, and (2) catastrophic forgetting even with clean data. A tiny amount of targeted safety data (0.3% of training) can largely reverse both. Text-only safety alignment cannot cover visual attacks.
+
+-- a good number of findings on this and it works mainly. This can be compared to Spa-vl RLHF pipeline.
+
+VLSBench
+
+- Identifies Visual Safety Information Leakage (VSIL): a systematic flaw in existing multimodal safety benchmarks where the harmful content in the image is already revealed in the textual query. Models can refuse based on text alone without cross-modal understanding. This explains the counterintuitive finding that text-only alignment matches multimodal alignment on existing benchmarks.
+- Proof of VSIL: on existing benchmarks (MM-SafetyBench, AdvBench etc.), textual SFT matches multimodal alignment. On VLSBench (no VSIL), clear gap opens. LLaVA-7B textual SFT: 13.99% safety rate vs multimodal SFT: 21.26% vs multimodal PPO: 35.47%. Qwen2-VL-7B: 67.4% textual vs 78.4% multimodal. When you remove text leakage, you actually need multimodal safety understanding.
+- 4-step construction pipeline designed to prevent leakage:
+    - Step 1: Generate harmful queries and image descriptions via two paths. Path A: extract harmful elements from ChatGPT, GPT-4o generates descriptions + queries. Path B: start from real-world images, Qwen2-VL-72B generates queries.
+    - Step 2: Detoxify the text. GPT-4o rewrites harmful queries into benign-looking text that retains meaning but removes all safety keywords. "Drugs and syringes" image gets paired with "fast results with this equipment." Filter out queries where leakage survives or meaning is lost.
+    - Step 3: Iterative image generation. SD 3.5 Large generates images, Qwen2-VL-72B evaluates match to description, loop until quality criteria met.
+    - Step 4: Final filtration via GPT-4o + manual review. Remove mismatched and non-harmful pairs.
+- 2,200 image-text pairs, 6 categories, 19 sub-categories. NSFW detectors score 0% on images. Text queries are benign alone. Harm is purely cross-modal.
+- Benchmark results expose the gap:
+    - LLaVA-v1.5-7B: 6.6% safety rate. GPT-4o: 21.43%. Gemini-1.5-pro: 49.78% (best). Most models below 25%.
+    - Compare to 90%+ safety rates on existing benchmarks with VSIL. The difference is entirely from leakage.
+    - Even safety-aligned models struggle: SPA-VL PPO reaches only 35.47%. VLGuard SFT only 21.26% on LLaVA-7B. Defenses that looked decisive on leaked benchmarks are revealed as partial.
+- 3-tier evaluation: safe with refusal, safe with warning, unsafe. Most models barely manage warnings. GPT-4o: 5.21% refusal, 16.22% warning. Models aren't reasoning about safety, just occasionally catching signals.
+- Additional findings:
+    - Reasoning models don't consistently improve safety. QVQ slightly better, LLaVA-CoT actually worse than base model.
+    - Image captions instead of images improve safety. Models are safer reading text descriptions than seeing actual images. Confirms vision pathway is the weak link.
+    - Safety prompts help (LLaVA-7B: 6.6% to 44.5%) but don't solve the problem.
+- What this means for the field: MM-SafetyBench, FigStep, VLGuard test set, SPA-VL evaluations all suffer from VSIL to varying degrees. The near-zero ASR results from SPA-VL and VLGuard on existing benchmarks are partly illusory. When you actually require cross-modal understanding, best defenses only reach 35-78% safety depending on model.
+- Converges with SIUO: both show genuine cross-modal safety reasoning is the unsolved problem. SIUO from the attack side (safe+safe requires cross-modal understanding). VLSBench from the evaluation side (existing benchmarks don't actually require it). Text-only alignment has been passing benchmarks that don't test what they claim to test.
+
+-- Good upgrade from siuo and shows how bad the other benchmarks were.
+
+--- Overall best: VLSBench.
