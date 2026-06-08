@@ -9,8 +9,12 @@
 - [Layer Normalization](https://arxiv.org/abs/1607.06450) — Ba et al., 2016
 - [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385) — He et al., 2016
 - [An Image is Worth 16x16 Words: Vision Transformers (ViT)](https://arxiv.org/abs/2010.11929) — Dosovitskiy et al., 2020
-- [Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture](https://arxiv.org/pdf/2301.08243) — LeCun et al., 2023
-- [Qwen3-VL paper](https://arxiv.org/pdf/2511.21631) — Qwen Team, 2025
+- [Learning Transferable Visual Models From Natural Language Supervision (CLIP)](https://arxiv.org/abs/2103.00020) — Radford et al., 2021
+- [A Path Towards Autonomous Machine Intelligence (JEPA)](https://openreview.net/forum?id=BZ5a1r-kVsf) — LeCun, 2022
+- [Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture (I-JEPA)](https://arxiv.org/abs/2301.08243) — Assran et al., 2023
+- [Visual Instruction Tuning (LLaVA)](https://arxiv.org/abs/2304.08485) — Liu et al., NeurIPS 2023
+- [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388) — Qwen Team, 2025
+- [Qwen3-VL Technical Report](https://arxiv.org/abs/2511.21631) — Qwen Team, 2025
 
 ---
 
