@@ -87,6 +87,10 @@ Modern State-of-the-Art MoE training involves three main components:
 2. Load Balancing Loss (or auxiliary-loss-free bias adjustment) to prevent dead experts
 3. Router Z-Loss to keep training numerically stable
 
+## Related Note
+
+If you are comparing ways to add capacity without scaling the full dense stack, also read [Per-Layer Embeddings (PLE)](./per_layer_embeddings.md). PLE is not sparse expert routing; it is a cheaper token-specific residual path that gives each transformer block its own small embedding slice.
+
 ## PyTorch Implementation (with Z-Loss & Load Balancing)
 ```python
 import torch
