@@ -15,6 +15,7 @@
 - [Visual Instruction Tuning (LLaVA)](https://arxiv.org/abs/2304.08485) — Liu et al., NeurIPS 2023
 - [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388) — Qwen Team, 2025
 - [Qwen3-VL Technical Report](https://arxiv.org/abs/2511.21631) — Qwen Team, 2025
+- [DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model](https://arxiv.org/abs/2405.04434)
 
 ---
 

@@ -1,46 +1,108 @@
 # Per-Layer Embeddings (PLE)
 
-Per-layer embeddings are an extra token-specific embedding path used in some Gemma 4 models. The basic idea is simple: each transformer block gets its own small learned embedding slice, so the model gains extra capacity without making the repeated attention + feed-forward stack much wider.
+**Source:** Gemma 4 architecture (E2B, E4B models)  
+**Type:** Architectural technique — capacity add-on for compact transformers
 
-## Why This Matters
+---
 
-- **Capacity without full compute scaling:** The main transformer blocks stay closer to the smaller effective model size.
-- **Embedding-style parameters are cheaper:** Extra parameters live in embedding tables and small projection layers rather than in every attention and MLP block.
-- **Useful for edge-sized models:** This is most appealing when you want a stronger model under a tight latency or memory budget.
+## Core Idea
 
-## How The Path Works
+Each transformer block receives its own dedicated embedding slice derived from the input token. This slice is injected as an extra residual signal at each layer, giving the model additional representational capacity without widening the attention and FFN stack.
 
-1. Token IDs are mapped through a per-layer embedding lookup.
-2. The normal token embeddings are projected into the same packed PLE space.
-3. The two contributions are combined and reshaped so each transformer layer receives its own slice.
-4. Inside the block, the standard attention and feed-forward path runs first.
-5. The layer-specific PLE slice is gated by the hidden state, projected back to model width, normalized, and added as an extra residual update.
+The hidden state dimension `d` stays constant throughout the entire forward pass. PLE never changes the shape of the main computation path.
 
-So PLE is not replacing attention or the FFN. It is an additional residual path that injects token-specific, layer-specific information.
+---
 
-## Distinction From Similar Ideas
+## Mental Model
 
-- **Not KV sharing:** KV sharing reduces inference cache growth. PLE does not target the cache; it adds representational capacity.
-- **Not MoE:** MoE sparsely routes tokens through experts. PLE keeps the dense transformer path and adds a compact per-layer embedding residual.
-- **Not a wider backbone:** A larger dense model increases compute everywhere. PLE concentrates extra parameters in cheaper embedding-style components.
+The token is looked up in a large PLE embedding table that produces a vector of size `num_layers × ple_dim`. This big vector is sliced once at the start — each layer claims its own chunk.
 
-## Gemma 4 Interpretation
+At every layer:
 
-Gemma 4 E2B and E4B use the idea in a way that makes the parameter accounting more nuanced:
+```
+hidden (d) --> Attention --> FFN --> hidden' (d)
+                                         |
+                              + PLE slice for this layer
+                                (gated, projected to d, normalized)
+                                         |
+                                    hidden'' (d)        <- still d-dimensional
+```
 
-- **E** stands for **effective** parameters.
-- The smaller number is closer to the main transformer-stack compute.
-- The larger total includes extra embedding parameters.
+The PLE slice for layer `i` is a table lookup result, not a computed feature. It is token-specific and layer-specific but does not depend on prior hidden states.
 
-That means the headline model size is not the full story. The useful mental model is: the dense computation path behaves more like the smaller model, while the extra embeddings provide additional capacity at a lower compute cost.
+---
 
-| Model | Effective params | Total params |
+## Forward Pass (Step by Step)
+
+1. Token IDs are looked up in a dedicated PLE embedding table, producing a packed vector of size `num_layers × ple_dim`.
+2. Normal token embeddings are projected into the same PLE space and combined with the lookup result.
+3. The combined vector is reshaped — each layer gets its own slice of size `ple_dim`.
+4. The transformer runs normally: attention, then FFN.
+5. After FFN, the current layer's PLE slice is:
+   - Gated by the hidden state
+   - Projected back to model width `d`
+   - Normalized
+   - Added as a residual to the hidden state
+
+---
+
+## Key Distinction: What Does NOT Change
+
+| Property | Behavior with PLE |
+|---|---|
+| Hidden state dimension | Stays `d` throughout |
+| Attention computation | Unchanged |
+| FFN computation | Unchanged |
+| KV cache size | Unchanged |
+| Routing / sparsity | None — fully dense |
+
+The PLE path is purely additive. It does not replace or reroute any existing computation.
+
+---
+
+## Why It Is Cheap
+
+Embedding parameters are cheap relative to attention/MLP parameters:
+
+- Embedding lookup = table index + small projection (no matrix multiply scaling with sequence length)
+- Extra parameters live in embedding tables, not in every repeated attention block
+- FLOPs added per layer are small compared to the attention and FFN cost
+
+This is why Gemma 4 reports two parameter counts:
+
+| Model | Effective (compute-heavy) | Total (including PLE embeddings) |
 |---|---:|---:|
 | Gemma 4 E2B | 2.3B | 5.1B |
 | Gemma 4 E4B | 4.5B | 8B |
 
-## Practical Takeaway
+The **E** prefix stands for **effective** — the compute behavior resembles the smaller number, not the total.
 
-PLE is best thought of as a capacity add-on. It gives each layer its own small token-specific memory, which can improve expressiveness without paying the full cost of making the core transformer uniformly larger.
+---
 
-For a compact model, that tradeoff can be attractive. For larger models, the same idea is less obviously compelling because the backbone already has more capacity and sparse-expert methods may be a better fit.
+## Comparison to Similar Ideas
+
+**KV Sharing**  
+Reduces KV cache memory during inference. PLE does not interact with the cache at all.
+
+**Mixture of Experts (MoE)**  
+Sparsely routes tokens to different FFN experts. PLE keeps the fully dense path and adds a separate cheap residual on top.
+
+**Wider backbone**  
+Increasing `d` scales compute at every attention and FFN layer uniformly. PLE concentrates extra parameters in embedding tables and small projections, leaving the backbone unchanged.
+
+---
+
+## When It Makes Sense
+
+- Compact models (sub-10B) where compute budget is tight but more capacity is needed
+- Edge deployment under latency or memory constraints
+- Less clearly useful for large models — at larger scale, the backbone already has sufficient capacity and MoE is typically a better fit for adding conditional compute
+
+---
+
+## Open Questions / Follow-Up
+
+- What is the actual `ple_dim` used in E2B vs E4B?
+- How is the gating implemented — sigmoid, tanh, or learned scalar?
+- Does PLE interact with quantization or affects activation outliers?
+- Is the PLE table shared across layers or fully independent per layer?
