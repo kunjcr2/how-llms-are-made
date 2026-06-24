@@ -16,7 +16,7 @@
 - [Flamingo: a Visual Language Model for Few-Shot Learning](https://arxiv.org/abs/2204.14198) — El-Nouby et al., 2022
 - [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388) — Qwen Team, 2025
 - [Qwen3-VL Technical Report](https://arxiv.org/abs/2511.21631) — Qwen Team, 2025
-- [DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model](https://arxiv.org/abs/2405.04434)
+- [DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model`](https://arxiv.org/abs/2405.04434)
 
 ---
 
