@@ -220,6 +220,19 @@ The dark side of KV Cache motivated several innovations, each progressively redu
 
 > DeepSeek did **not** use MQA or GQA — they invented **MLA** which achieves both low memory AND high performance. See `DeepSeek.md` for MLA details.
 
+### Also Important in Serving: PagedAttention (vLLM)
+
+The techniques above reduce the *amount* of KV cache per token/head. PagedAttention solves a different but related production issue: **how KV memory is allocated and reused across many concurrent requests**.
+
+Key distinction:
+1. MQA/GQA/MLA: reduce KV representation size.
+2. PagedAttention: reduce allocator fragmentation and idle reserved memory.
+
+In interview language:
+1. "KV-cache compression lowers memory footprint per token."
+2. "PagedAttention improves memory utilization efficiency at runtime."
+3. "Both are complementary in high-throughput inference systems."
+
 ---
 
 ## 10. Summary
@@ -244,7 +257,9 @@ Why KV Cache?
     ├── Cache size = l × b × n × h × s × 2 × 2
     ├── Scales linearly with context length (why longer context costs more)
     ├── DeepSeek R1 naive cache = 400 GB
-    └── Motivated innovations: MQA → GQA → MLA (DeepSeek's solution)
+    └── Motivated innovations:
+        - representation-side: MQA → GQA → MLA (DeepSeek's solution)
+        - serving-side allocation: PagedAttention (vLLM)
 ```
 
 ---

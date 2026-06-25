@@ -116,3 +116,78 @@ The journey of a prompt through vLLM is a highly orchestrated process:
 5.  **Completion**: Upon finishing, unique blocks are freed instantly; shared prefix blocks remain for future users.
 
 By managing GPU memory (VRAM) as efficiently as an Operating System manages RAM, and using tricks like shared prefixes and speculative drafting, vLLM achieves state-of-the-art throughput and cost efficiency.
+
+---
+
+## Interview Notes: Explaining PagedAttention Clearly
+
+When asked "What is PagedAttention?" in interviews, a strong answer usually follows this order:
+1. GPU memory composition during inference.
+2. The KV-cache memory management problem.
+3. The PagedAttention solution and why it works.
+
+This structure shows systems thinking, not just definition recall.
+
+### 1) Start from GPU Memory During Inference
+
+During inference, GPU VRAM is mostly occupied by:
+1. Model weights (static after training).
+2. Activations/workspace (temporary tensors).
+3. KV cache (dynamic, often dominant at serving time).
+
+The pressure point is KV cache growth: for each generated token, we store new K and V vectors for each layer, so memory grows with active sequence length.
+
+### 2) Explain the Naive Memory Allocation Problem
+
+A naive design reserves a large contiguous chunk of KV memory per request based on estimated max tokens. This causes two fragmentation issues:
+
+1. External fragmentation / over-reservation:
+- Requests hold large reserved chunks they may never fully use.
+- Other requests wait even though much reserved space is still empty.
+
+2. Internal fragmentation / placement inefficiency:
+- Freed regions may be too small or mismatched for waiting requests under contiguous constraints.
+- Usable memory exists, but allocator cannot place new work effectively.
+
+Net effect: poor throughput, wasted VRAM, and longer queueing delays.
+
+### 3) PagedAttention as a KV-Cache Memory Manager
+
+PagedAttention avoids large contiguous per-request allocation. Instead, it:
+1. Splits KV cache into fixed-size blocks (pages), e.g., 16 tokens per block.
+2. Maintains a free-block list of available blocks.
+3. Maintains a per-sequence block table mapping logical token positions to physical blocks.
+4. Allocates blocks on demand as decoding grows each sequence.
+5. Returns blocks immediately when requests finish.
+
+Because logical sequence layout is decoupled from physical layout, one request can span non-contiguous blocks. This sharply reduces fragmentation and increases effective VRAM utilization.
+
+### What This Fixes (Interview Sound Bites)
+
+1. "No up-front giant reservation per sequence."
+2. "Memory allocation becomes dynamic and fine-grained."
+3. "Blocks can be reused immediately across requests."
+4. "Higher serving throughput from better memory packing."
+
+### Why It Is Called "Paged" Attention
+
+The name borrows from OS paging:
+1. Logical sequence memory is mapped via a table.
+2. Physical storage is non-contiguous blocks.
+
+Attention still needs access to all prior keys/values for a token, but those keys/values can live across many physical blocks. Kernel execution walks block mappings and computes attention over paged KV data.
+
+### Online Softmax Intuition (Short Version)
+
+A common follow-up is: "If keys are split across pages, how do you compute softmax over all scores?"
+
+Intuition:
+1. Process attention scores block-by-block.
+2. Maintain running normalization statistics (max and denominator terms).
+3. Merge partial results into the exact global softmax result.
+
+So, full contiguous score materialization is not required.
+
+### 60-Second Interview Answer Template
+
+"PagedAttention in vLLM is primarily a KV-cache memory management strategy inspired by OS paging. Instead of reserving one large contiguous KV region per request, it partitions KV memory into fixed blocks and uses a block table plus free-block list to allocate blocks dynamically as decoding progresses. This removes most fragmentation and over-reservation, improves VRAM utilization, and enables higher-throughput continuous batching. Attention computation still works over non-contiguous KV pages via paged kernels and block-wise softmax accumulation."

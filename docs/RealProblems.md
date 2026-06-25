@@ -203,3 +203,7 @@ where $A \in \mathbb{R}^{d \times r}$ and $B \in \mathbb{R}^{r \times d}$ and $r
 - Firewalls protect the AI infrastructure from malicious attacks (like prompt injections, jailbreaks, or hacking), acting as a security gatekeeper that blocks dangerous requests before they reach the model.
 - Guardrails enforce business logic and behavioral boundaries, acting as a safety net inside the application pipeline to filter out hallucinations, toxic language, and off-topic conversations before they reach the user.
 - In short: A firewall stops the AI from being hacked, while a guardrail stops the AI from being distracted.
+
+### 38. What is Entropy Collapse?
+- Entropy collapse is a failure mode where a system loses uncertainty, diversity, or exploratory capacity too quickly, becoming overconfident, repetitive, rigid, or stuck in a narrow set of states.
+- In AI/ML, especially LLM reinforcement learning, it usually means the model’s policy entropy drops sharply during training. In plain terms: the model stops exploring many possible outputs and starts assigning very high probability to a small set of actions/tokens. This can cause overconfidence, reduced output diversity, premature convergence, and performance saturation.
