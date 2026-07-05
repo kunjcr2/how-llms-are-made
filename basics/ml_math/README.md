@@ -25,16 +25,17 @@ Math is the *language* ML is written in. These notes teach you to speak it fluen
 | [`01_statistics_probability/`](./01_statistics_probability/README.md) | Distributions, Bayes, MLE, Regression | Loss functions, model assumptions, probabilistic inference |
 | [`02_linear_algebra/`](./02_linear_algebra/README.md) | Vectors, Matrices, Eigenvalues, SVD, PCA | Data representation, weight matrices, dimensionality reduction |
 | [`03_calculus/`](./03_calculus/README.md) | Derivatives, Gradients, Chain Rule, Optimization | Backpropagation, gradient descent, loss landscapes |
+| [`04_second_order_ml/`](./04_second_order_ml/README.md) | Jacobians, Hessians, Taylor expansions, EWC, JVPs | Continual learning, curvature, second-order approximations |
 
 ---
 
 ## 🗺️ Recommended Learning Path
 
 ```
-Statistics & Probability  ──►  Linear Algebra  ──►  Calculus
-        │                            │                   │
-   Understanding data           Data as vectors     Training models
-   and distributions            and transformations  via optimization
+Statistics & Probability  ──►  Linear Algebra  ──►  Calculus  ──►  Second-Order ML
+        │                            │                   │                 │
+   Understanding data           Data as vectors     Training models   Curvature, local
+   and distributions            and transformations  via optimization  approximations, EWC
 ```
 
 You can go through each section independently, but this order builds the best foundation.
