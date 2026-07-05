@@ -28,6 +28,26 @@
 
 ---
 
+## DeepSeek V4
+
+### Official DeepSeek Papers
+
+- [mHC: Manifold-Constrained Hyper-Connections](https://arxiv.org/abs/2512.24880) — Xie et al., 2025. Pre-V4 architectural paper introducing manifold-constrained hyper-connections (mHC) to restore stable identity-like residual behavior in widened hyper-connections.
+- [DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence](https://arxiv.org/abs/2606.19348) — DeepSeek-AI et al., submitted April 26, 2026. Main V4 technical report covering V4-Pro and V4-Flash, 1M-token context, hybrid CSA/HCA attention, mHC, and Muon-based training.
+- [DSpark Paper (in the official DeepSpec repo)](https://github.com/deepseek-ai/DeepSpec/blob/main/DSpark_paper.pdf) — DeepSeek, June 2026. Official speculative-decoding work released alongside [DeepSpec](https://github.com/deepseek-ai/DeepSpec), DeepSeek's training and evaluation codebase for speculative decoding algorithms.
+
+### Related Third-Party / Collaborative Work
+
+- [FlashMemory-DeepSeek-V4: Lightning Index Ultra-Long Context via Lookahead Sparse Attention](https://arxiv.org/abs/2606.09079) — Wang et al., 2026. Third-party work built on top of the DeepSeek-V4 architecture for long-context KV-cache reduction via lookahead sparse attention.
+- [DualPath: Breaking the Storage Bandwidth Bottleneck in Agentic LLM Inference](https://arxiv.org/abs/2602.21548) — Wu et al., 2026. Collaborative infrastructure work from the broader DeepSeek research line on KV-cache loading and storage-to-GPU bottlenecks in agentic inference.
+
+### Commonly Confused With V4, But Not Actually V4 Papers
+
+- [Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models](https://arxiv.org/abs/2601.07372) — Cheng et al., 2026. This is the Engram paper often speculated to be V4-related before release, but it is not part of the final V4 technical report.
+- `Muon` optimizer — originally from Keller Jordan et al., 2024; DeepSeek-V4 adopts and scales it, but it is not itself a DeepSeek V4 paper.
+
+---
+
 ## Efficiency and Compute
 
 - [Mixture-of-Depths: Dynamically Allocating Compute in Transformer Models](https://arxiv.org/abs/2404.02258) — Raposo et al., 2024
