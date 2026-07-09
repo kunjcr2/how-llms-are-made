@@ -55,6 +55,8 @@
 - [Less is More: Recursive Reasoning with Tiny Networks (TRM)](https://arxiv.org/abs/2510.04871) — Jolicoeur-Martineau, 2024
 - [Hierarchical Reasoning Model (HRM)](https://arxiv.org/abs/2506.21734) — Wang et al., 2025
 
+- [StreamIndex: Memory-Bounded Compressed Sparse Attention via Streaming Top-k](https://arxiv.org/pdf/2605.02568)
+
 ---
 
 ## Alignment and RLHF
