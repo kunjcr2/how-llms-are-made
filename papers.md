@@ -90,6 +90,7 @@
 - [HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal](https://arxiv.org/abs/2402.04249) — Mazeika et al., 2024
 - [A StrongREJECT for Empty Jailbreaks](https://arxiv.org/abs/2402.10260) — Souly et al., NeurIPS 2024
 - [WildGuard: Open One-stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs](https://arxiv.org/abs/2406.18495) — Han et al., NeurIPS 2024
+- [SEA: Low-Resource Safety Alignment for Multimodal Large Language Models via Synthetic Embeddings](https://arxiv.org/html/2502.12562v3)
 
 ---
 
