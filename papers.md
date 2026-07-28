@@ -57,6 +57,10 @@
 
 - [StreamIndex: Memory-Bounded Compressed Sparse Attention via Streaming Top-k](https://arxiv.org/pdf/2605.02568)
 
+## Model Compression and Quantization
+
+- [ParetoQ: Improving Scaling Laws in Extremely Low-bit LLM Quantization](https://arxiv.org/abs/2502.02631) — Liu et al., 2025. Unified framework for 1-bit, 1.58-bit, 2-bit, 3-bit, and 4-bit quantization that compares PTQ and QAT across the low-bit regime.
+
 ---
 
 ## Alignment and RLHF
