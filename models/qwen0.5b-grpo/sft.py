@@ -118,7 +118,7 @@ def evaluate(adapter=None, limit=None, batch_size=256, max_new_tokens=400,
     """Same prompts, same greedy decoding, same 1319 test problems as your
     baseline. adapter=None evaluates the raw base model."""
     dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
-    tok = AutoTokenizer.from_pretrained(MODEL)
+    tok = AutoTokenizer.from_pretrained(MODEL)``
     tok.padding_side = "left"
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
