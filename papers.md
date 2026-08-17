@@ -55,6 +55,12 @@
 - [Less is More: Recursive Reasoning with Tiny Networks (TRM)](https://arxiv.org/abs/2510.04871) — Jolicoeur-Martineau, 2024
 - [Hierarchical Reasoning Model (HRM)](https://arxiv.org/abs/2506.21734) — Wang et al., 2025
 
+- [StreamIndex: Memory-Bounded Compressed Sparse Attention via Streaming Top-k](https://arxiv.org/pdf/2605.02568)
+
+## Model Compression and Quantization
+
+- [ParetoQ: Improving Scaling Laws in Extremely Low-bit LLM Quantization](https://arxiv.org/abs/2502.02631) — Liu et al., 2025. Unified framework for 1-bit, 1.58-bit, 2-bit, 3-bit, and 4-bit quantization that compares PTQ and QAT across the low-bit regime.
+
 ---
 
 ## Alignment and RLHF
@@ -88,6 +94,7 @@
 - [HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal](https://arxiv.org/abs/2402.04249) — Mazeika et al., 2024
 - [A StrongREJECT for Empty Jailbreaks](https://arxiv.org/abs/2402.10260) — Souly et al., NeurIPS 2024
 - [WildGuard: Open One-stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs](https://arxiv.org/abs/2406.18495) — Han et al., NeurIPS 2024
+- [SEA: Low-Resource Safety Alignment for Multimodal Large Language Models via Synthetic Embeddings](https://arxiv.org/html/2502.12562v3)
 
 ---
 
