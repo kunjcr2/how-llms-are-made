@@ -55,13 +55,13 @@ GRPO variant designed to reduce normalization-induced bias.
 | Method                                  |         GSM8K Accuracy |
 | --------------------------------------- | ---------------------: |
 | Base                                    |  **42.08%** (555/1319) |
-| Standard Gold SFT                       |  **32.30%** (426/1319) |
-| Weighted SFT (`1× CE + 5× correctness`) |             **<24.x%** |
-| Full-model SFT                          |               **<30%** |
-| RFT                                     |             **~37.4%** |
+| Base → SFT (LoRA)                      |  **32.30%** (426/1319) |
+| Base → Weighted SFT (LoRA) (`1× CE + 5× correctness`) |             **<24.x%** |
+| Base → SFT (Full)                       |               **<30%** |
+| Base → RFT                                     |             **~37.4%** |
 | Base → GRPO                             |  **45.03%** (594/1319) |
-| RFT → GRPO @ 300                        |  **36.54%** (482/1319) |
-| RFT → GRPO @ 500                        |  **34.95%** (461/1319) |
+| Base → RFT → GRPO @ 300                        |  **36.54%** (482/1319) |
+| Base → RFT → GRPO @ 500                        |  **34.95%** (461/1319) |
 | Base → Dr. GRPO @ 200                   |  **46.02%** (607/1319) |
 | Base → Dr. GRPO @ 250                   | **44.66%** (~589/1319) |
 
