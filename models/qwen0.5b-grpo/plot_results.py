@@ -19,9 +19,9 @@ accuracy = [24.0, 30.0, 32.30, 36.54, 37.4, 42.08, 45.03, 45.72, 46.02]
 labels = ["<24.x%", "<30%", "32.30%", "36.54%", "~37.4%", "42.08%", "45.03%", "45.72%", "46.02%"]
 
 colors = ["#7f8c8d"] * len(methods)
-colors[6] = "#6c5ce7"       # GRPO
-colors[7] = "#3498db"       # GSPO @ 200
-colors[8] = "#00a884"       # Dr. GRPO @ 200
+colors[6] = "#0d7ee7"       # GRPO
+colors[7] = "#0d7ee7"       # GSPO @ 200
+colors[8] = "#0d7ee7"       # Dr. GRPO @ 200
 
 fig, ax = plt.subplots(figsize=(16, 9))
 x = range(len(methods))
