@@ -1,71 +1,79 @@
-# Qwen2.5-0.5B GSM8K Experiments
+# Qwen2.5-0.5B GSM8K Post-Training Experiments
 
 ## Overview
 
-Comparison of **SFT, weighted SFT, rejection-sampling fine-tuning (RFT), and GRPO** on `Qwen/Qwen2.5-0.5B-Instruct` using GSM8K.
+Comparison of **SFT, weighted SFT, rejection-sampling fine-tuning (RFT), GRPO, and Dr. GRPO** on `Qwen/Qwen2.5-0.5B-Instruct`.
 
-**Evaluation:** 1,319 GSM8K test problems, greedy decoding, exact numeric-answer accuracy.
+**Evaluation:** full GSM8K test split (`1,319` problems), greedy decoding, exact numeric-answer accuracy.
 
 ## Methods
 
 ### Standard SFT
 
-LoRA fine-tuning on GSM8K gold solutions using standard completion-token cross-entropy.
+LoRA fine-tuning on GSM8K gold solutions.
 
-- LoRA rank: `16`
-- LR: `2e-4`
-- Epochs: `2`
-- Completion-only loss
-- `####` format rate: ~`99.85%`
+* LoRA rank: `16`
+* LR: `2e-4`
+* Epochs: `2`
+* Completion-only cross-entropy
+* `####` format rate: ~`99.85%`
 
 ### Weighted SFT
 
-Modified SFT objective emphasizing answer correctness:
+Modified token-level objective:
 
-- Standard CE weight: `1×`
-- Correctness/final-answer weight: `5×`
-
-Despite stronger emphasis on the final answer, performance degraded further.
+* Normal CE weight: `1×`
+* Final-answer/correctness weight: `5×`
 
 ### RFT
 
-For each training problem:
+Rejection-sampling fine-tuning:
 
-1. Sample `8` solutions from the base model.
-2. Retain correct, unique trajectories.
-3. LoRA-SFT on the filtered trajectories.
+1. Sample `8` solutions per training problem.
+2. Keep correct, unique trajectories.
+3. LoRA-SFT on the retained generations.
 
 ### GRPO
 
-Online RL with fresh model generations and binary final-answer reward.
+Online RL using fresh sampled completions and binary answer-correctness reward.
 
-- Generations/prompt: `8`
-- Temperature: `0.8`
-- Top-p: `0.95`
-- `beta = 0`
+* `num_generations = 8`
+* `beta = 0`
+* Group-relative advantage optimization
+
+### Dr. GRPO
+
+GRPO variant designed to reduce normalization-induced bias.
+
+* `loss_type = "dr_grpo"`
+* `scale_rewards = False`
+* No per-group reward standard-deviation normalization
+* Constant completion-length normalization
 
 ## Results
 
-| Method                                  |        GSM8K Accuracy |
-| --------------------------------------- | --------------------: |
-| Base                                    | **42.08%** (555/1319) |
-| Standard Gold SFT                       | **32.30%** (426/1319) |
-| Weighted SFT (`1× CE + 5× correctness`) |            **<24.x%** |
-| Full-model SFT                          |              **<30%** |
-| RFT                                     |            **~37.4%** |
-| Base → GRPO                             | **45.03%** (594/1319) |
-| RFT → GRPO @ 300                        | **36.54%** (482/1319) |
-| RFT → GRPO @ 500                        | **34.95%** (461/1319) |
+| Method                                  |         GSM8K Accuracy |
+| --------------------------------------- | ---------------------: |
+| Base                                    |  **42.08%** (555/1319) |
+| Standard Gold SFT                       |  **32.30%** (426/1319) |
+| Weighted SFT (`1× CE + 5× correctness`) |             **<24.x%** |
+| Full-model SFT                          |               **<30%** |
+| RFT                                     |             **~37.4%** |
+| Base → GRPO                             |  **45.03%** (594/1319) |
+| RFT → GRPO @ 300                        |  **36.54%** (482/1319) |
+| RFT → GRPO @ 500                        |  **34.95%** (461/1319) |
+| Base → Dr. GRPO @ 200                   |  **46.02%** (607/1319) |
+| Base → Dr. GRPO @ 250                   | **44.66%** (~589/1319) |
 
 ## Findings
 
-- **Base → GRPO performed best:** `42.08% → 45.03%` (`+2.95 pp`).
-- Standard SFT learned formatting almost perfectly but reduced accuracy by ~`10 pp`.
-- Increasing answer/correctness weighting to `5×` made SFT substantially worse (`<24.x%`).
-- RFT also degraded the base model: `42.08% → ~37.4%`.
-- GRPO from the RFT initialization degraded further: `~37.4% → 36.54% → 34.95%`.
-- RFT→GRPO training reward increased while greedy test accuracy decreased, showing a mismatch between **on-policy reward optimization and held-out greedy generalization**.
+* **Dr. GRPO @ 200 is the best observed checkpoint:** `42.08% → 46.02%` (`+3.94 pp`).
+* Standard GRPO also improved the base model to `45.03%`.
+* SFT, weighted SFT, and RFT all reduced held-out accuracy.
+* RFT → GRPO degraded progressively: `~37.4% → 36.54% → 34.95%`.
+* Dr. GRPO peaked early: `46.02% @ 200 → 44.66% @ 250`, showing that training reward and held-out greedy accuracy can diverge.
+* Standard SFT achieved near-perfect formatting while substantially reducing mathematical accuracy.
 
 ## Conclusion
 
-For this 0.5B model, **direct GRPO was the only training strategy that improved GSM8K accuracy**. Both standard and answer-weighted SFT degraded reasoning performance, while RFT initialization made subsequent GRPO optimization progressively worse.
+For Qwen2.5-0.5B, **RL directly from the base model outperformed supervised post-training**, with Dr. GRPO producing the best observed result at **46.02%**. Intermediate checkpoint evaluation was critical, since both RFT→GRPO and later Dr. GRPO training showed that improving training objectives did not guarantee better held-out greedy accuracy.
