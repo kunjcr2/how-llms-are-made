@@ -220,7 +220,7 @@ The quality of this transfer depends heavily on the quality of the world model. 
 
 ### Dreaming in the 2018 World Models Work
 
-The 2018 *World Models* work demonstrated the idea of training an agent inside a learned, hallucinated environment. The agent could generate imagined game trajectories, evaluate them, and improve its policy without continuously interacting with the real game.
+The 2018 _World Models_ work demonstrated the idea of training an agent inside a learned, hallucinated environment. The agent could generate imagined game trajectories, evaluate them, and improve its policy without continuously interacting with the real game.
 
 In this interpretation:
 
