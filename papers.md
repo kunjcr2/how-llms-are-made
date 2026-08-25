@@ -138,3 +138,4 @@
 ## Courses and Books
 
 - [HuggingFace Smol Course](https://github.com/huggingface/smol-course) — Hugging Face, 2024
+- [ATLAS](https://arxiv.org/pdf/2510.22037) - Google Research
