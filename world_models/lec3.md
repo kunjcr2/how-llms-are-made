@@ -63,10 +63,10 @@ Random exploration also avoids requiring an expert to collect trajectories. The 
 
 ## 4. Vision Component: Compressing the Frame
 
-The first component is a vision network, represented by $V$. It compresses the approximately 3,000 values in a frame into a compact code with 12 values:
+The first component is the vision module, $V_{\phi,\psi} = (E_\phi, D_\psi)$, consisting of an encoder and a decoder. The encoder compresses the approximately 3,000 values in a frame into a compact code with 12 values:
 
 $$
-z_t = E(o_t)
+z_t = E_\phi(o_t)
 $$
 
 Here, $z_t$ is called a **code**, **latent**, or latent representation. It is a compact way to represent the image while preserving its important information.
@@ -74,7 +74,7 @@ Here, $z_t$ is called a **code**, **latent**, or latent representation. It is a 
 This is the same encoder-decoder idea introduced in Lecture 2:
 
 $$
-o_t \xrightarrow{\text{encoder}} z_t \xrightarrow{\text{decoder}} \hat{o}_t
+o_t \xrightarrow{E_\phi} z_t \xrightarrow{D_\psi} \hat{o}_t
 $$
 
 The encoder acts like the witness describing a face, while the decoder acts like the sketch artist reconstructing it from the description.
@@ -88,7 +88,7 @@ The vision module is trained as a **variational autoencoder (VAE)**. Its purpose
 The reconstruction loss compares the original frame with the decoded frame:
 
 $$
-\mathcal{L}_{\text{reconstruction}} = \mathcal{L}(o_t, D(E(o_t)))
+\mathcal{L}_{\text{reconstruction}} = \mathcal{L}(o_t, D_\psi(E_\phi(o_t)))
 $$
 
 The encoder and decoder parameters are updated to reduce this loss.
@@ -113,10 +113,19 @@ This illustrates a general lesson: reconstruction objectives should reflect the 
 
 Even a perfect compressed representation of the current frame does not reveal the ball's velocity. The second component therefore maintains a memory vector that persists across time steps.
 
+The notation used throughout this lecture is:
+
+- $V_{\phi,\psi}$: the complete vision module.
+- $E_\phi$: the encoder, with parameters $\phi$.
+- $D_\psi$: the decoder, with parameters $\psi$.
+- $m_t$: the memory state at time $t$; this is a state vector, not a separate function $M$.
+- $R_\theta$: the recurrent state-transition function, with parameters $\theta$.
+- $P_\omega$: the latent prediction head, with parameters $\omega$.
+
 Let $m_t$ be the memory at time $t$. The memory network updates it using the previous memory, the current visual code, and the current action:
 
 $$
-m_{t+1} = R(m_t, z_t, a_t)
+m_{t+1} = R_\theta(m_t, z_t, a_t)
 $$
 
 In the architecture described in the lecture, the memory has 128 components. It is a vector rather than a literal visual record of every previous frame.
@@ -135,21 +144,21 @@ The memory starts empty at the beginning of an episode. As the model processes e
 The updated memory is used to predict the code at the next time step. A prediction network maps the current memory to the next latent representation:
 
 $$
-\hat{z}_{t+1} = P(m_{t+1})
+\hat{z}_{t+1} = P_\omega(m_{t+1})
 $$
 
 The complete transition process is therefore:
 
 $$
-z_t = E(o_t)
+z_t = E_\phi(o_t)
 $$
 
 $$
-m_{t+1} = R(m_t, z_t, a_t)
+m_{t+1} = R_\theta(m_t, z_t, a_t)
 $$
 
 $$
-\hat{z}_{t+1} = P(m_{t+1})
+\hat{z}_{t+1} = P_\omega(m_{t+1})
 $$
 
 During training, the predicted code is compared with the actual code extracted from the next frame:
@@ -177,7 +186,7 @@ For each time step in a training episode:
 The training objective can be written as:
 
 $$
-\mathcal{L} = \sum_t \left\|P(R(m_t, E(o_t), a_t)) - E(o_{t+1})\right\|^2
+\mathcal{L} = \sum_t \left\|P_\omega\!\left(R_\theta(m_t, E_\phi(o_t), a_t)\right) - E_\phi(o_{t+1})\right\|^2
 $$
 
 At early time steps, the memory contains little information, so prediction error may be high. As the model processes more of an episode, the memory becomes more informative and predictions can improve.
